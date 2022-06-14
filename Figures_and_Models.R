@@ -1,5 +1,7 @@
 # Copyright: Han Wang, June 8th 2022.
 
+# Edited on June 14th 2022 (updated the figure numbers).
+
 
 # Load packages and define some functions
 
@@ -184,55 +186,55 @@ dat_exp2_question_n192_wide_4measures_sdfiltered_nophonrep<-dat_exp2_question_n1
 dat_exp2_question_n192_long_sdfiltered<-read.csv("dat_exp2_question_n192_long_sdfiltered.csv") #Note that under task.type, a=single speech, b = dual-visual, c = dual-phonological, d = dual-lexical. Here, we removed the responses larger than 3SDs of the group mean and removed the NA rows for visual responses in speech single condition.
 
 
-# Figure 4: Trial-wise % correct in speech tasks (Experiment 1)
+# Figure 3: Trial-wise % correct in speech tasks (Experiment 1)
 
 ## Model
 
-m_fig4_full<-gam(cbind(count_correct,3-count_correct) ~ relevel(as.factor(task), ref="speech_single") + s(trial, k = -1, bs = "tp", by=task)+
+m_fig3_full<-gam(cbind(count_correct,3-count_correct) ~ relevel(as.factor(task), ref="speech_single") + s(trial, k = -1, bs = "tp", by=task)+
                           s(participant,bs='re')+s(participant,trial,bs='re')+s(sentence,bs='re')+s(sentence,task,bs='re'),
                         data = dat_dual_speech_n192,family = binomial(link="logit"),method = "ML") # the saturated model including all terms allowed by the experimental design
 
-m_fig4_final<-gam(cbind(count_correct,3-count_correct) ~ relevel(as.factor(task), ref="speech_single") + s(trial, k = -1, bs = "tp", by=task)+
+m_fig3_final<-gam(cbind(count_correct,3-count_correct) ~ relevel(as.factor(task), ref="speech_single") + s(trial, k = -1, bs = "tp", by=task)+
                     s(participant,bs='re')+s(participant,trial,bs='re'),
                   data = dat_dual_speech_n192,family = binomial(link="logit"),method = "ML") # the final GAMM reported in the paper
 
-summary(m_fig4_final) # model output can be found in Table 1 in the paper
+summary(m_fig3_final) # model output can be found in Table 1 in the paper
 
 ## Figure
 
-ilink<-family(m_fig4_final)$linkinv # get the link function
+ilink<-family(m_fig3_final)$linkinv # get the link function
 
-m_fig4_final_new_data <- tidyr::expand(dat_dual_speech_n192, nesting(participant,task),
+m_fig3_final_new_data <- tidyr::expand(dat_dual_speech_n192, nesting(participant,task),
                                        trial = unique(trial)) # prepare an empty data frame for feeding the prediction
 
-m_fig4_final_prediction<-bind_cols(m_fig4_final_new_data, setNames(as_tibble(predict(m_fig4_final, m_fig4_final_new_data, 
+m_fig3_final_prediction<-bind_cols(m_fig3_final_new_data, setNames(as_tibble(predict(m_fig3_final, m_fig3_final_new_data, 
                                                                                      exclude = c("s(participant)","s(participant,trial)"),
                                                                                      se.fit = TRUE)[1:2]), c('fit_link','se_link'))) # generate the prediction for responses based on the link function 
 
-m_fig4_final_prediction <- mutate(m_fig4_final_prediction,
+m_fig3_final_prediction <- mutate(m_fig3_final_prediction,
                                   fit_resp  = ilink(fit_link),
                                   right_upr = ilink(fit_link + (2 * se_link)),
                                   right_lwr = ilink(fit_link - (2 * se_link))) # now change the predicted responses back to its original scale, along with the 95% intervals
 
-m_fig4_final_prediction<-aggregate(cbind(fit_link,se_link,fit_resp,right_upr,right_lwr)~trial+task,data=m_fig4_final_prediction,FUN=mean) # aggregate the data because we only care about the fixed effects
+m_fig3_final_prediction<-aggregate(cbind(fit_link,se_link,fit_resp,right_upr,right_lwr)~trial+task,data=m_fig3_final_prediction,FUN=mean) # aggregate the data because we only care about the fixed effects
 
 
-m_fig4_final_reorder<-c('speech_single','speech_td_48_60','speech_td_24_36','speech_td_0_12') # reorder the levels for plotting
+m_fig3_final_reorder<-c('speech_single','speech_td_48_60','speech_td_24_36','speech_td_0_12') # reorder the levels for plotting
 
 facet_labels<-c(speech_single = "Single", speech_td_0_12 = "Dual Hard",speech_td_24_36 = 'Dual Intermediate', speech_td_48_60 = 'Dual Easy') # Set the lable for panels in the plot
 
 dat_dual_speech_n192_se_reorder <- dat_dual_speech_n192_se %>% 
-  mutate(task = fct_relevel(task, m_fig4_final_reorder)) # reorder the raw data per level of task
+  mutate(task = fct_relevel(task, m_fig3_final_reorder)) # reorder the raw data per level of task
 
-m_fig4_final_prediction_reorder<-m_fig4_final_prediction %>% 
-  mutate(task = fct_relevel(task, m_fig4_final_reorder)) # reorder the prediction per level of task
+m_fig3_final_prediction_reorder<-m_fig3_final_prediction %>% 
+  mutate(task = fct_relevel(task, m_fig3_final_reorder)) # reorder the prediction per level of task
 
 
-plot_m_fig4_final<-ggplot(dat_dual_speech_n192_se_reorder,aes(x=trial, y=word_percent,color=task, shape=task)) + 
+plot_m_fig3_final<-ggplot(dat_dual_speech_n192_se_reorder,aes(x=trial, y=word_percent,color=task, shape=task)) + 
   geom_errorbar(aes(ymin=word_percent-se, ymax=word_percent+se), width=.1) +
   geom_point() +
-  geom_line(data=m_fig4_final_prediction_reorder, aes(x=trial, y=fit_resp*100,color=task), size=.6) +
-  geom_ribbon(data=m_fig4_final_prediction_reorder, aes(ymin=right_lwr*100, ymax=right_upr*100, x=trial, y=fit_resp*100,fill=task,color=task), alpha = 0.2) +# error band
+  geom_line(data=m_fig3_final_prediction_reorder, aes(x=trial, y=fit_resp*100,color=task), size=.6) +
+  geom_ribbon(data=m_fig3_final_prediction_reorder, aes(ymin=right_lwr*100, ymax=right_upr*100, x=trial, y=fit_resp*100,fill=task,color=task), alpha = 0.2) +# error band
   scale_y_continuous(breaks = seq(0, 100, by = 10),limits=c(0, 100))+
   labs(title="Trial-wise % correct in speech tasks (Experiment 1)",
        x="Trial number", y = "%Correct")+
@@ -241,7 +243,7 @@ plot_m_fig4_final<-ggplot(dat_dual_speech_n192_se_reorder,aes(x=trial, y=word_pe
              labeller = labeller(task = facet_labels)) # main figure
 
 
-plot_m_fig4_final+
+plot_m_fig3_final+
   theme(plot.title = element_text(size = 13,hjust=0.5), 
         axis.text.x = element_text(size=11.5,angle = 0, hjust = 0.5),
         axis.title.x = element_text(size=12),
@@ -252,7 +254,7 @@ plot_m_fig4_final+
         legend.position = "none") # update the formatting for the plot
 
 
-# Figure 5: First derivative analysis (speech task)
+# Figure 4: First derivative analysis (speech task)
 
 library(gratia)
 
@@ -260,7 +262,7 @@ newd <- tidyr::expand(dat_dual_speech_n192, nesting(participant,task),
                       trial = unique(trial)) # a data frame to hold the new data generated from the prediction
 
 
-fd <- derivatives(m_fig4_final, type = "central", term = "s(trial)", newdata = newd, unconditional = TRUE,partial_match = TRUE,interval = "simultaneous", n_sim = 10000) # get the derivatives and generate the simultaneous confidence intervals
+fd <- derivatives(m_fig3_final, type = "central", term = "s(trial)", newdata = newd, unconditional = TRUE,partial_match = TRUE,interval = "simultaneous", n_sim = 10000) # get the derivatives and generate the simultaneous confidence intervals
 fd<-fd %>%
   filter(lower != 0 & upper != 0)
 fd<-aggregate(cbind(derivative,se,crit,lower,upper)~smooth+data,data=fd,FUN=mean) # aggregate the data as we only care about the fix effects
@@ -297,62 +299,62 @@ ggplot(dat_fd_reorder_diffloads,
         legend.position = "none") # plot the derivatives
 
 
-# Figure 6: Trial-wise accuracy in visual tasks (Experiment 1)
+# Figure 5: Trial-wise accuracy in visual tasks (Experiment 1)
 
-## Model: (also see comments on Figure 4 for how the code is structured)
+## Model: (also see comments on Figure 3 for how the code is structured)
 
-m_fig6_full<-gam(correctness~task+s(trial, k = -1, bs = "tp", by=task)+
+m_fig5_full<-gam(correctness~task+s(trial, k = -1, bs = "tp", by=task)+
                    s(participant,bs='re')+s(participant,trial,bs='re')+s(prompt,bs='re')+s(prompt,task,bs='re'),
                  data=dat_dual_n192, family=binomial(link="logit"),method = "ML")
 
-m_fig6_final<-gam(correctness~task+s(trial, k = -1, bs = "tp", by=task)+
+m_fig5_final<-gam(correctness~task+s(trial, k = -1, bs = "tp", by=task)+
                     s(participant,bs='re')+s(prompt,task,bs='re'),
                   data=dat_dual_n192, family=binomial(link="logit"),method = "ML")
-summary(m_fig6_final)
+summary(m_fig5_final)
 
-m_fig6_final_ref24_36<-gam(correctness~relevel(as.factor(task), ref="speech_td_24_36")+s(trial, k = -1, bs = "tp", by=task)+
+m_fig5_final_ref24_36<-gam(correctness~relevel(as.factor(task), ref="speech_td_24_36")+s(trial, k = -1, bs = "tp", by=task)+
                              s(participant,bs='re')+s(prompt,task,bs='re'),
                            data=dat_dual_n192, family=binomial(link="logit"),method = "ML") # Change the reference level in the model to the intermediate difficulty.
-summary(m_fig6_final_ref24_36) # Model output can be found in Table C1 in the paper
+summary(m_fig5_final_ref24_36) # Model output can be found in Table C1 in the paper
 
 
-## Figure (also see comments on Figure 4 for how the code is structured):
+## Figure (also see comments on Figure 3 for how the code is structured):
 
-ilink<-family(m_fig6_final)$linkinv
+ilink<-family(m_fig5_final)$linkinv
 
-m_fig6_final_new_data <- tidyr::expand(dat_dual_n192, nesting(participant,prompt,task),
+m_fig5_final_new_data <- tidyr::expand(dat_dual_n192, nesting(participant,prompt,task),
                                        trial = unique(trial))
 
-m_fig6_final_prediction<-bind_cols(m_fig6_final_new_data, setNames(as_tibble(predict(m_fig6_final, m_fig6_final_new_data,
+m_fig5_final_prediction<-bind_cols(m_fig5_final_new_data, setNames(as_tibble(predict(m_fig5_final, m_fig5_final_new_data,
                                                                                      exclude = c("s(participant)", "s(participant,trial)", "s(prompt)", "s(prompt,task)"),
                                                                                      se.fit = TRUE)[1:2]), c('fit_link','se_link')))
 
 
 
-m_fig6_final_prediction <- mutate(m_fig6_final_prediction,
+m_fig5_final_prediction <- mutate(m_fig5_final_prediction,
                                   fit_resp  = ilink(fit_link),
                                   right_upr = ilink(fit_link + (2 * se_link)),
                                   right_lwr = ilink(fit_link - (2 * se_link)))
 
-m_fig6_final_prediction<-aggregate(cbind(fit_link,se_link,fit_resp,right_upr,right_lwr)~trial+task,data=m_fig6_final_prediction,FUN=mean)
+m_fig5_final_prediction<-aggregate(cbind(fit_link,se_link,fit_resp,right_upr,right_lwr)~trial+task,data=m_fig5_final_prediction,FUN=mean)
 
 
-m_fig6_final_reorder<-c('speech_td_48_60','speech_td_24_36','speech_td_0_12')
+m_fig5_final_reorder<-c('speech_td_48_60','speech_td_24_36','speech_td_0_12')
 
 facet_labels<-c(speech_td_0_12 = "Dual Hard",speech_td_24_36 = 'Dual Intermediate', speech_td_48_60 = 'Dual Easy')
 
 dat_dual_n192_secondary_acc_reorder <- dat_dual_n192_secondary_acc %>% 
-  mutate(task = fct_relevel(task, m_fig6_final_reorder))
+  mutate(task = fct_relevel(task, m_fig5_final_reorder))
 
-m_fig6_final_prediction_reorder<-m_fig6_final_prediction %>% 
-  mutate(task = fct_relevel(task, m_fig6_final_reorder))
+m_fig5_final_prediction_reorder<-m_fig5_final_prediction %>% 
+  mutate(task = fct_relevel(task, m_fig5_final_reorder))
 
 
-plot_m_fig6_final<-ggplot(dat_dual_n192_secondary_acc_reorder, aes(x=trial, y=correctness,color=task, shape=task)) +
+plot_m_fig5_final<-ggplot(dat_dual_n192_secondary_acc_reorder, aes(x=trial, y=correctness,color=task, shape=task)) +
   geom_errorbar(aes(ymin=correctness-se, ymax=correctness+se), width=.1) +
   geom_point() +
-  geom_line(data=m_fig6_final_prediction_reorder, aes(x=trial, y=fit_resp,color=task), size=.6) +
-  geom_ribbon(data=m_fig6_final_prediction_reorder, aes(ymin=right_lwr, ymax=right_upr, x=trial, y=fit_resp,fill=task,color=task), alpha = 0.2) +# error band
+  geom_line(data=m_fig5_final_prediction_reorder, aes(x=trial, y=fit_resp,color=task), size=.6) +
+  geom_ribbon(data=m_fig5_final_prediction_reorder, aes(ymin=right_lwr, ymax=right_upr, x=trial, y=fit_resp,fill=task,color=task), alpha = 0.2) +# error band
   scale_y_continuous(breaks = seq(0, 1, by = 0.1),limits=c(0.4, 1))+
   labs(title="Trial-wise accuracy in visual tasks (Experiment 1)",
        x="Trial number", y = "Accuracy")+
@@ -361,7 +363,7 @@ plot_m_fig6_final<-ggplot(dat_dual_n192_secondary_acc_reorder, aes(x=trial, y=co
              labeller = labeller(task = facet_labels))
 
 
-plot_m_fig6_final+
+plot_m_fig5_final+
   theme(plot.title = element_text(size = 13,hjust=0.5), 
         axis.text.x = element_text(size=11.5,angle = 0, hjust = 0.5),
         axis.title.x = element_text(size=12),
@@ -372,54 +374,54 @@ plot_m_fig6_final+
         legend.position = "none")
 
 
-# Figure 8: Trial-wise % correct in speech tasks (Experiment 2)
+# Figure 7: Trial-wise % correct in speech tasks (Experiment 2)
 
-## Model (also see comments on Figure 4 for how the code is structured)
+## Model (also see comments on Figure 3 for how the code is structured)
 
-m_fig8_full<-gam(cbind(count_correct,3-count_correct) ~ relevel(as.factor(task), ref="speech_single") + s(trial, k = -1, bs = "tp", by=task)+
+m_fig7_full<-gam(cbind(count_correct,3-count_correct) ~ relevel(as.factor(task), ref="speech_single") + s(trial, k = -1, bs = "tp", by=task)+
                    s(participant,bs='re')+s(participant,trial,bs='re')+s(sentence,bs='re')+s(sentence,task,bs='re'),
                  data = dat_dual_speech_n192_nophonrep,family = binomial(link="logit"),method = "ML")
 
-m_fig8_final<-gam(cbind(count_correct,3-count_correct) ~ relevel(as.factor(task), ref="speech_single") + s(trial, k = -1, bs = "tp", by=task)+
+m_fig7_final<-gam(cbind(count_correct,3-count_correct) ~ relevel(as.factor(task), ref="speech_single") + s(trial, k = -1, bs = "tp", by=task)+
                     s(participant,bs='re')+s(participant,trial,bs='re'),
                   data = dat_dual_speech_n192_nophonrep,family = binomial(link="logit"),method = "ML") # Model output can be found in Table 2 in the paper
 
 
-## Figure (also see comments on Figure 4 for how the code is structured)
+## Figure (also see comments on Figure 3 for how the code is structured)
 
-ilink<-family(m_fig8_final)$linkinv
+ilink<-family(m_fig7_final)$linkinv
 
-m_fig8_final_new_data <- tidyr::expand(dat_dual_speech_n192_nophonrep, nesting(participant,task),
+m_fig7_final_new_data <- tidyr::expand(dat_dual_speech_n192_nophonrep, nesting(participant,task),
                                        trial = unique(trial))
 
-m_fig8_final_prediction<-bind_cols(m_fig8_final_new_data, setNames(as_tibble(predict(m_fig8_final, m_fig8_final_new_data, 
+m_fig7_final_prediction<-bind_cols(m_fig7_final_new_data, setNames(as_tibble(predict(m_fig7_final, m_fig7_final_new_data, 
                                                                                      exclude = c("s(participant)","s(participant,trial)"),
                                                                                      se.fit = TRUE)[1:2]), c('fit_link','se_link')))
 
-m_fig8_final_prediction <- mutate(m_fig8_final_prediction,
+m_fig7_final_prediction <- mutate(m_fig7_final_prediction,
                                   fit_resp  = ilink(fit_link),
                                   right_upr = ilink(fit_link + (2 * se_link)),
                                   right_lwr = ilink(fit_link - (2 * se_link)))
 
-m_fig8_final_prediction<-aggregate(cbind(fit_link,se_link,fit_resp,right_upr,right_lwr)~trial+task,data=m_fig8_final_prediction,FUN=mean)
+m_fig7_final_prediction<-aggregate(cbind(fit_link,se_link,fit_resp,right_upr,right_lwr)~trial+task,data=m_fig7_final_prediction,FUN=mean)
 
 
-m_fig8_final_reorder<-c('speech_single','visual','phonological','lexical')
+m_fig7_final_reorder<-c('speech_single','visual','phonological','lexical')
 
 facet_labels<-c(lexical = "Dual Lexical", phonological = "Dual Phonological",speech_single = 'Single', visual = 'Dual Visual')
 
 dat_dual_speech_n192_nophonrep_se_reorder <- dat_dual_speech_n192_nophonrep_se %>% 
-  mutate(task = fct_relevel(task, m_fig8_final_reorder))
+  mutate(task = fct_relevel(task, m_fig7_final_reorder))
 
-m_fig8_final_prediction_reorder<-m_fig8_final_prediction %>% 
-  mutate(task = fct_relevel(task, m_fig8_final_reorder))
+m_fig7_final_prediction_reorder<-m_fig7_final_prediction %>% 
+  mutate(task = fct_relevel(task, m_fig7_final_reorder))
 
 
-plot_m_fig8_final<-ggplot(dat_dual_speech_n192_nophonrep_se_reorder,aes(x=trial, y=word_percent,color=task, shape=task)) + 
+plot_m_fig7_final<-ggplot(dat_dual_speech_n192_nophonrep_se_reorder,aes(x=trial, y=word_percent,color=task, shape=task)) + 
   geom_errorbar(aes(ymin=word_percent-se, ymax=word_percent+se), width=.1) +
   geom_point() +
-  geom_line(data=m_fig8_final_prediction_reorder, aes(x=trial, y=fit_resp*100,color=task), size=.6) +
-  geom_ribbon(data=m_fig8_final_prediction_reorder, aes(ymin=right_lwr*100, ymax=right_upr*100, x=trial, y=fit_resp*100,fill=task,color=task), alpha = 0.2) +# error band
+  geom_line(data=m_fig7_final_prediction_reorder, aes(x=trial, y=fit_resp*100,color=task), size=.6) +
+  geom_ribbon(data=m_fig7_final_prediction_reorder, aes(ymin=right_lwr*100, ymax=right_upr*100, x=trial, y=fit_resp*100,fill=task,color=task), alpha = 0.2) +# error band
   scale_y_continuous(breaks = seq(0, 100, by = 10),limits=c(0, 100))+
   labs(title="Trial-wise % correct in speech tasks (Experiment 2)",
        x="Trial number", y = "%Correct")+
@@ -428,7 +430,7 @@ plot_m_fig8_final<-ggplot(dat_dual_speech_n192_nophonrep_se_reorder,aes(x=trial,
              labeller = labeller(task = facet_labels))
 
 
-plot_m_fig8_final+
+plot_m_fig7_final+
   theme(plot.title = element_text(size = 13,hjust=0.5), 
         axis.text.x = element_text(size=11.5,angle = 0, hjust = 0.5),
         axis.title.x = element_text(size=12),
@@ -439,14 +441,14 @@ plot_m_fig8_final+
         legend.position = "none")
 
 
-# Figure 9: First derivative analysis for the speech task performance in Experiment 2 (also see comments on Figure 5 for how the code is structured):
+# Figure 8: First derivative analysis for the speech task performance in Experiment 2 (also see comments on Figure 4 for how the code is structured):
 
 library(gratia)
 
 newd_exp2_speech <- tidyr::expand(dat_dual_speech_n192_nophonrep, nesting(participant,task),
                       trial = unique(trial))
 
-fd_difftasks <- derivatives(m_fig8_final, type = "central", term = "s(trial)", newdata = newd_exp2_speech, unconditional = TRUE,partial_match = TRUE,interval = "simultaneous",n_sim = 10000)
+fd_difftasks <- derivatives(m_fig7_final, type = "central", term = "s(trial)", newdata = newd_exp2_speech, unconditional = TRUE,partial_match = TRUE,interval = "simultaneous",n_sim = 10000)
 fd_difftasks<-fd_difftasks %>%
   filter(lower != 0 & upper != 0)
 fd_difftasks<-aggregate(cbind(derivative,se,crit,lower,upper)~smooth+data,data=fd_difftasks,FUN=mean)
@@ -481,57 +483,57 @@ ggplot(dat_fd_reorder_difftasks,
         legend.text = element_text(size=11),
         legend.position = "none")
 
-# Figure 10: Trial-wise accuracy in secondary tasks (Experiment 2)
+# Figure 9: Trial-wise accuracy in secondary tasks (Experiment 2)
 
-## Model (also see comments on Figure 4 for how the code is structured):
+## Model (also see comments on Figure 3 for how the code is structured):
 
-m_fig10_full<-gam(correctness~relevel(as.factor(task), ref="visual")+s(trial, k = -1, bs = "tp", by=task)+
+m_fig9_full<-gam(correctness~relevel(as.factor(task), ref="visual")+s(trial, k = -1, bs = "tp", by=task)+
                     s(participant,bs='re')+s(participant,trial,bs='re')+s(prompt,bs='re')+s(prompt,task,bs='re'),
                   data=dat_dual_n192_nophonrep, family=binomial(link="logit"),method = "ML")
 
-m_fig10_final<-gam(correctness~relevel(as.factor(task), ref="visual")+s(trial, k = -1, bs = "tp", by=task)+
+m_fig9_final<-gam(correctness~relevel(as.factor(task), ref="visual")+s(trial, k = -1, bs = "tp", by=task)+
                      s(participant,bs='re')+s(participant,trial,bs='re'),
                    data=dat_dual_n192_nophonrep, family=binomial(link="logit"),method = "ML")
-summary(m_fig10_final) # Model output can be found in Table C4 in the paper
+summary(m_fig9_final) # Model output can be found in Table C4 in the paper
 
 
-## Figure (also see comments on Figure 4 for how the code is structured):
+## Figure (also see comments on Figure 3 for how the code is structured):
 
-ilink<-family(m_fig10_final)$linkinv
+ilink<-family(m_fig9_final)$linkinv
 
-m_fig10_final_new_data <- tidyr::expand(dat_dual_n192_nophonrep, nesting(participant,prompt,task),
+m_fig9_final_new_data <- tidyr::expand(dat_dual_n192_nophonrep, nesting(participant,prompt,task),
                                         trial = unique(trial))
 
-m_fig10_final_prediction<-bind_cols(m_fig10_final_new_data, setNames(as_tibble(predict(m_fig10_final, m_fig10_final_new_data,
+m_fig9_final_prediction<-bind_cols(m_fig9_final_new_data, setNames(as_tibble(predict(m_fig9_final, m_fig9_final_new_data,
                                                                                        exclude = c("s(participant)", "s(participant,trial)", "s(prompt)", "s(prompt,task)"),
                                                                                        se.fit = TRUE)[1:2]), c('fit_link','se_link')))
 
 
 
-m_fig10_final_prediction <- mutate(m_fig10_final_prediction,
+m_fig9_final_prediction <- mutate(m_fig9_final_prediction,
                                    fit_resp  = ilink(fit_link),
                                    right_upr = ilink(fit_link + (2 * se_link)),
                                    right_lwr = ilink(fit_link - (2 * se_link)))
 
-m_fig10_final_prediction<-aggregate(cbind(fit_link,se_link,fit_resp,right_upr,right_lwr)~trial+task,data=m_fig10_final_prediction,FUN=mean)
+m_fig9_final_prediction<-aggregate(cbind(fit_link,se_link,fit_resp,right_upr,right_lwr)~trial+task,data=m_fig9_final_prediction,FUN=mean)
 
 
-m_fig10_final_reorder<-c('visual','phonological','lexical')
+m_fig9_final_reorder<-c('visual','phonological','lexical')
 
 facet_labels<-c(lexical = "Lexical",phonological = 'Phonological', visual = 'Visual')
 
 dat_dual_n192_nophonrep_secondary_acc_reorder <- dat_dual_n192_nophonrep_secondary_acc %>% 
-  mutate(task = fct_relevel(task, m_fig10_final_reorder))
+  mutate(task = fct_relevel(task, m_fig9_final_reorder))
 
-m_fig10_final_prediction_reorder<-m_fig10_final_prediction %>% 
-  mutate(task = fct_relevel(task, m_fig10_final_reorder))
+m_fig9_final_prediction_reorder<-m_fig9_final_prediction %>% 
+  mutate(task = fct_relevel(task, m_fig9_final_reorder))
 
 
-plot_m_fig10_final<-ggplot(dat_dual_n192_nophonrep_secondary_acc_reorder, aes(x=trial, y=correctness,color=task, shape=task)) +
+plot_m_fig9_final<-ggplot(dat_dual_n192_nophonrep_secondary_acc_reorder, aes(x=trial, y=correctness,color=task, shape=task)) +
   geom_errorbar(aes(ymin=correctness-se, ymax=correctness+se), width=.1) +
   geom_point() +
-  geom_line(data=m_fig10_final_prediction_reorder, aes(x=trial, y=fit_resp,color=task), size=.6) +
-  geom_ribbon(data=m_fig10_final_prediction_reorder, aes(ymin=right_lwr, ymax=right_upr, x=trial, y=fit_resp,fill=task,color=task), alpha = 0.2) +# error band
+  geom_line(data=m_fig9_final_prediction_reorder, aes(x=trial, y=fit_resp,color=task), size=.6) +
+  geom_ribbon(data=m_fig9_final_prediction_reorder, aes(ymin=right_lwr, ymax=right_upr, x=trial, y=fit_resp,fill=task,color=task), alpha = 0.2) +# error band
   scale_y_continuous(breaks = seq(0, 1, by = 0.1),limits=c(0.4, 1))+
   labs(title="Trial-wise accuracy in secondary tasks (Experiment 2)",
        x="Trial number", y = "Accuracy")+
@@ -540,7 +542,7 @@ plot_m_fig10_final<-ggplot(dat_dual_n192_nophonrep_secondary_acc_reorder, aes(x=
              labeller = labeller(task = facet_labels))
 
 
-plot_m_fig10_final+
+plot_m_fig9_final+
   theme(plot.title = element_text(size = 13,hjust=0.5), 
         axis.text.x = element_text(size=11.5,angle = 0, hjust = 0.5),
         axis.title.x = element_text(size=12),
@@ -557,9 +559,9 @@ library(egg)
 library(ggpubr)
 library(gridExtra)
 
-m_fig4_final_Viz<-getViz(m_fig4_final) # Vectorise the model for visualization purpose
+m_fig3_final_Viz<-getViz(m_fig3_final) # Vectorise the model for visualization purpose
 
-task_single_easy<-plotDiff(s1 = sm(m_fig4_final_Viz, 4), s2 = sm(m_fig4_final_Viz, 1)) + l_ciPoly() + 
+task_single_easy<-plotDiff(s1 = sm(m_fig3_final_Viz, 4), s2 = sm(m_fig3_final_Viz, 1)) + l_ciPoly() + 
   l_fitLine() + geom_hline(yintercept = 0, linetype = 2) # pairwise comparisons between the smooths of Trial for the Single and Dual-easy conditions.
 
 
@@ -570,7 +572,7 @@ tsingleeasy_formatted<-task_single_easy + theme(axis.title = element_blank(),
                                                 panel.grid.minor.x = element_line(color = "grey90")) # Format the figure
 
 
-task_single_interm<-plotDiff(s1 = sm(m_fig4_final_Viz, 3), s2 = sm(m_fig4_final_Viz, 1)) + l_ciPoly() + 
+task_single_interm<-plotDiff(s1 = sm(m_fig3_final_Viz, 3), s2 = sm(m_fig3_final_Viz, 1)) + l_ciPoly() + 
   l_fitLine() + geom_hline(yintercept = 0, linetype = 2) # pairwise comparisons between the smooths of Trial for the Single and Dual-intermediate conditions.
 
 tsingleinterm_formatted<-task_single_interm + theme(axis.title = element_blank(),
@@ -579,7 +581,7 @@ tsingleinterm_formatted<-task_single_interm + theme(axis.title = element_blank()
                                                     panel.grid.major.x = element_line(color = "grey90"),
                                                     panel.grid.minor.x = element_line(color = "grey90"))
 
-task_single_hard<-plotDiff(s1 = sm(m_fig4_final_Viz, 2), s2 = sm(m_fig4_final_Viz, 1)) + l_ciPoly() + 
+task_single_hard<-plotDiff(s1 = sm(m_fig3_final_Viz, 2), s2 = sm(m_fig3_final_Viz, 1)) + l_ciPoly() + 
   l_fitLine() + geom_hline(yintercept = 0, linetype = 2) # pairwise comparisons between the smooths of Trial for the Single and Dual-hard conditions.
 
 tsinglehard_formatted<-task_single_hard + theme(axis.title = element_blank(),
@@ -588,7 +590,7 @@ tsinglehard_formatted<-task_single_hard + theme(axis.title = element_blank(),
                                                 panel.grid.major.x = element_line(color = "grey90"),
                                                 panel.grid.minor.x = element_line(color = "grey90"))
 
-task_easy_interm<-plotDiff(s1 = sm(m_fig4_final_Viz, 3), s2 = sm(m_fig4_final_Viz, 4)) + l_ciPoly() + 
+task_easy_interm<-plotDiff(s1 = sm(m_fig3_final_Viz, 3), s2 = sm(m_fig3_final_Viz, 4)) + l_ciPoly() + 
   l_fitLine() + geom_hline(yintercept = 0, linetype = 2) # pairwise comparisons between the smooths of Trial for the Dual-easy and Dual-intermediate conditions.
 
 teasyinterm_formatted<-task_easy_interm + theme(axis.title = element_blank(),
@@ -597,7 +599,7 @@ teasyinterm_formatted<-task_easy_interm + theme(axis.title = element_blank(),
                                                 panel.grid.major.x = element_line(color = "grey90"),
                                                 panel.grid.minor.x = element_line(color = "grey90"))
 
-task_easy_hard<-plotDiff(s1 = sm(m_fig4_final_Viz, 2), s2 = sm(m_fig4_final_Viz, 4)) + l_ciPoly() + 
+task_easy_hard<-plotDiff(s1 = sm(m_fig3_final_Viz, 2), s2 = sm(m_fig3_final_Viz, 4)) + l_ciPoly() + 
   l_fitLine() + geom_hline(yintercept = 0, linetype = 2) # pairwise comparisons between the smooths of Trial for the Dual-easy and Dual-hard conditions.
 
 teasyhard_formatted<-task_easy_hard + theme(axis.title = element_blank(),
@@ -607,7 +609,7 @@ teasyhard_formatted<-task_easy_hard + theme(axis.title = element_blank(),
                                             panel.grid.minor.x = element_line(color = "grey90"))
 
 
-task_interm_hard<-plotDiff(s1 = sm(m_fig4_final_Viz, 2), s2 = sm(m_fig4_final_Viz, 3)) + l_ciPoly() + 
+task_interm_hard<-plotDiff(s1 = sm(m_fig3_final_Viz, 2), s2 = sm(m_fig3_final_Viz, 3)) + l_ciPoly() + 
   l_fitLine() + geom_hline(yintercept = 0, linetype = 2) # pairwise comparisons between the smooths of Trial for the Dual-intermediate and Dual-hard conditions.
 
 tintermhard_formatted<-task_interm_hard + theme(axis.title = element_blank(),
@@ -702,9 +704,9 @@ library(egg)
 library(ggpubr)
 library(gridExtra)
 
-m_fig8_final_Viz <- getViz(m_fig8_final)
+m_fig7_final_Viz <- getViz(m_fig7_final)
 
-task_single_visual<-plotDiff(s1 = sm(m_fig8_final_Viz, 4), s2 = sm(m_fig8_final_Viz, 3)) + l_ciPoly() + 
+task_single_visual<-plotDiff(s1 = sm(m_fig7_final_Viz, 4), s2 = sm(m_fig7_final_Viz, 3)) + l_ciPoly() + 
   l_fitLine() + geom_hline(yintercept = 0, linetype = 2)
 
 
@@ -715,7 +717,7 @@ tsinglevisual_formatted<-task_single_visual + theme(axis.title = element_blank()
                                                     panel.grid.minor.x = element_line(color = "grey90"))
 
 
-task_single_phonological<-plotDiff(s1 = sm(m_fig8_final_Viz, 2), s2 = sm(m_fig8_final_Viz, 3)) + l_ciPoly() + 
+task_single_phonological<-plotDiff(s1 = sm(m_fig7_final_Viz, 2), s2 = sm(m_fig7_final_Viz, 3)) + l_ciPoly() + 
   l_fitLine() + geom_hline(yintercept = 0, linetype = 2)
 
 tsinglephonological_formatted<-task_single_phonological + theme(axis.title = element_blank(),
@@ -724,7 +726,7 @@ tsinglephonological_formatted<-task_single_phonological + theme(axis.title = ele
                                                                 panel.grid.major.x = element_line(color = "grey90"),
                                                                 panel.grid.minor.x = element_line(color = "grey90"))
 
-task_single_lexical<-plotDiff(s1 = sm(m_fig8_final_Viz, 1), s2 = sm(m_fig8_final_Viz, 3)) + l_ciPoly() + 
+task_single_lexical<-plotDiff(s1 = sm(m_fig7_final_Viz, 1), s2 = sm(m_fig7_final_Viz, 3)) + l_ciPoly() + 
   l_fitLine() + geom_hline(yintercept = 0, linetype = 2)
 
 tsinglelexical_formatted<-task_single_lexical + theme(axis.title = element_blank(),
@@ -733,7 +735,7 @@ tsinglelexical_formatted<-task_single_lexical + theme(axis.title = element_blank
                                                       panel.grid.major.x = element_line(color = "grey90"),
                                                       panel.grid.minor.x = element_line(color = "grey90"))
 
-task_visual_phonological<-plotDiff(s1 = sm(m_fig8_final_Viz, 2), s2 = sm(m_fig8_final_Viz, 4)) + l_ciPoly() + 
+task_visual_phonological<-plotDiff(s1 = sm(m_fig7_final_Viz, 2), s2 = sm(m_fig7_final_Viz, 4)) + l_ciPoly() + 
   l_fitLine() + geom_hline(yintercept = 0, linetype = 2)
 
 tvisualphonological_formatted<-task_visual_phonological + theme(axis.title = element_blank(),
@@ -742,7 +744,7 @@ tvisualphonological_formatted<-task_visual_phonological + theme(axis.title = ele
                                                                 panel.grid.major.x = element_line(color = "grey90"),
                                                                 panel.grid.minor.x = element_line(color = "grey90"))
 
-task_visual_lexical<-plotDiff(s1 = sm(m_fig8_final_Viz, 1), s2 = sm(m_fig8_final_Viz, 4)) + l_ciPoly() + 
+task_visual_lexical<-plotDiff(s1 = sm(m_fig7_final_Viz, 1), s2 = sm(m_fig7_final_Viz, 4)) + l_ciPoly() + 
   l_fitLine() + geom_hline(yintercept = 0, linetype = 2)
 
 tvisuallexical_formatted<-task_visual_lexical + theme(axis.title = element_blank(),
@@ -752,7 +754,7 @@ tvisuallexical_formatted<-task_visual_lexical + theme(axis.title = element_blank
                                                       panel.grid.minor.x = element_line(color = "grey90"))
 
 
-task_phonological_lexical<-plotDiff(s1 = sm(m_fig8_final_Viz, 1), s2 = sm(m_fig8_final_Viz, 2)) + l_ciPoly() + 
+task_phonological_lexical<-plotDiff(s1 = sm(m_fig7_final_Viz, 1), s2 = sm(m_fig7_final_Viz, 2)) + l_ciPoly() + 
   l_fitLine() + geom_hline(yintercept = 0, linetype = 2)
 
 tphonologicallexical_formatted<-task_phonological_lexical + theme(axis.title = element_blank(),
@@ -775,7 +777,7 @@ annotate_figure(task_singletolexical,
 
 # Figure D4: Trial-wise RTs in secondary tasks (Experiment 2)
 
-## Model (also see comments for figure 4 for what the code means below):
+## Model (also see comments for Figure 3 for what the code means below):
 
 m_figd4_final_full<-gam(rt~relevel(as.factor(task), ref="visual")+s(trial, k = -1, bs = "tp", by=task)+
                           s(participant,bs='re')+s(participant,trial,bs='re')+s(prompt,bs='re')+s(prompt,task,bs='re'),
@@ -787,7 +789,7 @@ m_figd4_final_final<-gam(rt~relevel(as.factor(task), ref="visual")+s(trial, k = 
                          data=dat_dual_n192_nophonrep_sndcorrect, family=Gamma(link="log"),method = "ML")
 summary(m_figd4_final_final) # Model output can be found in Table C5 in the paper
 
-## Plots (also see comments for figure 4 for what the code means below)
+## Plots (also see comments for Figure 3 for what the code means below)
 
 ilink<-family(m_figd4_final_final)$linkinv
 
@@ -886,7 +888,7 @@ summary(m_figd5_final)
 
 # Figure D6: Trial-wise % correct in speech tasks (phonological and phonological replication)
 
-## Model (also see the comments for Figure 4 for what the code means below):
+## Model (also see the comments for Figure 3 for what the code means below):
 
 m_figd6_full<-gam(cbind(count_correct,3-count_correct) ~ relevel(as.factor(task), ref="phonological") + s(trial, k = -1, bs = "tp", by=task)+
                     s(participant,bs='re')+s(participant,trial,bs='re')+s(sentence,bs='re')+s(sentence,task,bs='re'),
@@ -899,7 +901,7 @@ m_figd6_final<-gam(cbind(count_correct,3-count_correct) ~ relevel(as.factor(task
 
 summary(m_figd6_final)
 
-## Figure (also see the comments for Figure 4 for what the code means below):
+## Figure (also see the comments for Figure 3 for what the code means below):
 
 
 ilink<-family(m_figd6_final)$linkinv
@@ -955,7 +957,7 @@ plot_m_figd6_final+
 
 # Figure D7: Trial-wise accuracy in secondary tasks (phonological and phonological replication)
 
-## Model (also see the comments for Figure 4 for what the code means below):
+## Model (also see the comments for Figure 3 for what the code means below):
 
 m_figd7_full<-gam(correctness~relevel(as.factor(task), ref="phonological")+s(trial, k = -1, bs = "tp", by=task)+
                     s(participant,bs='re')+s(participant,trial,bs='re')+s(prompt,bs='re')+s(prompt,task,bs='re'),
@@ -966,7 +968,7 @@ m_figd7_final<-gam(correctness~relevel(as.factor(task), ref="phonological")+s(tr
                    data=dat_dual_speech_n96_onlyphonrep, family=binomial(link="logit"),method = "ML")
 summary(m_figd7_final)
 
-## Figure (also see the comments for Figure 4 for what the code means below):
+## Figure (also see the comments for Figure 3 for what the code means below):
 
 ilink<-family(m_figd7_final)$linkinv
 
