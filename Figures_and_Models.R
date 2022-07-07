@@ -1,5 +1,6 @@
 # Copyright: Han Wang, June 8th 2022.
 
+# Edited on July 7th 2022 (removed the figure titles)
 # Edited on June 14th 2022 (updated the figure numbers).
 
 
@@ -236,8 +237,7 @@ plot_m_fig3_final<-ggplot(dat_dual_speech_n192_se_reorder,aes(x=trial, y=word_pe
   geom_line(data=m_fig3_final_prediction_reorder, aes(x=trial, y=fit_resp*100,color=task), size=.6) +
   geom_ribbon(data=m_fig3_final_prediction_reorder, aes(ymin=right_lwr*100, ymax=right_upr*100, x=trial, y=fit_resp*100,fill=task,color=task), alpha = 0.2) +# error band
   scale_y_continuous(breaks = seq(0, 100, by = 10),limits=c(0, 100))+
-  labs(title="Trial-wise % correct in speech tasks (Experiment 1)",
-       x="Trial number", y = "%Correct")+
+  labs(x="Trial number", y = "%Correct")+
   theme_minimal()+
   facet_wrap(~task,
              labeller = labeller(task = facet_labels)) # main figure
@@ -356,8 +356,7 @@ plot_m_fig5_final<-ggplot(dat_dual_n192_secondary_acc_reorder, aes(x=trial, y=co
   geom_line(data=m_fig5_final_prediction_reorder, aes(x=trial, y=fit_resp,color=task), size=.6) +
   geom_ribbon(data=m_fig5_final_prediction_reorder, aes(ymin=right_lwr, ymax=right_upr, x=trial, y=fit_resp,fill=task,color=task), alpha = 0.2) +# error band
   scale_y_continuous(breaks = seq(0, 1, by = 0.1),limits=c(0.4, 1))+
-  labs(title="Trial-wise accuracy in visual tasks (Experiment 1)",
-       x="Trial number", y = "Accuracy")+
+  labs(x="Trial number", y = "Accuracy")+
   theme_minimal()+
   facet_wrap(~task,
              labeller = labeller(task = facet_labels))
@@ -423,8 +422,7 @@ plot_m_fig7_final<-ggplot(dat_dual_speech_n192_nophonrep_se_reorder,aes(x=trial,
   geom_line(data=m_fig7_final_prediction_reorder, aes(x=trial, y=fit_resp*100,color=task), size=.6) +
   geom_ribbon(data=m_fig7_final_prediction_reorder, aes(ymin=right_lwr*100, ymax=right_upr*100, x=trial, y=fit_resp*100,fill=task,color=task), alpha = 0.2) +# error band
   scale_y_continuous(breaks = seq(0, 100, by = 10),limits=c(0, 100))+
-  labs(title="Trial-wise % correct in speech tasks (Experiment 2)",
-       x="Trial number", y = "%Correct")+
+  labs(x="Trial number", y = "%Correct")+
   theme_minimal()+
   facet_wrap(~task,
              labeller = labeller(task = facet_labels))
@@ -535,8 +533,7 @@ plot_m_fig9_final<-ggplot(dat_dual_n192_nophonrep_secondary_acc_reorder, aes(x=t
   geom_line(data=m_fig9_final_prediction_reorder, aes(x=trial, y=fit_resp,color=task), size=.6) +
   geom_ribbon(data=m_fig9_final_prediction_reorder, aes(ymin=right_lwr, ymax=right_upr, x=trial, y=fit_resp,fill=task,color=task), alpha = 0.2) +# error band
   scale_y_continuous(breaks = seq(0, 1, by = 0.1),limits=c(0.4, 1))+
-  labs(title="Trial-wise accuracy in secondary tasks (Experiment 2)",
-       x="Trial number", y = "Accuracy")+
+  labs(x="Trial number", y = "Accuracy")+
   theme_minimal()+
   facet_wrap(~task,
              labeller = labeller(task = facet_labels))
@@ -681,8 +678,7 @@ plot_m_figd2_final<-ggplot(dat_dual_n192_sndcorrect_rt_se_reorder, aes(x=trial, 
   geom_line(data=m_figd2_final_prediction_reorder, aes(x=trial, y=fit_resp,color=task), size=.6) +
   geom_ribbon(data=m_figd2_final_prediction_reorder, aes(ymin=right_lwr, ymax=right_upr, x=trial, y=fit_resp,fill=task,color=task), alpha = 0.2) +# error band
   scale_y_continuous(breaks = seq(0, 1400, by = 200),limits=c(0, 1400))+
-  labs(title="Trial-wise RTs in visual tasks (Experiment 1)",
-       x="Trial number", y = "RT (ms)")+
+  labs(x="Trial number", y = "RT (ms)")+
   theme_minimal()+
   facet_wrap(~task,
              labeller = labeller(task = facet_labels))
@@ -858,8 +854,7 @@ plot_single_40t_60t_n78<-ggplot(dat_single_40t_60t_n78_se, aes(x=task, y=word_pe
   scale_x_discrete(labels= dat_single_40t_60t_n78_task_label)+
   scale_fill_npg()+
   coord_cartesian(ylim = c(0, 100))+
-  labs(title="Overall performance in the single speech task",
-       x="Experiment", y = "%Correct")+
+  labs(x="Experiment", y = "%Correct")+
   theme_minimal() # Generate a figure
 
 plot_single_40t_60t_n78+
@@ -1038,8 +1033,7 @@ plot_effortques_speechvisual_sdfiltered<-ggplot(dat_exp1_question_n192_long_sdfi
   scale_x_discrete(labels=c("effort" = "Effort", attention = "Attention"))+
   scale_y_continuous(breaks = seq(0, 100, by = 10))+
   scale_fill_npg(labels = c("Single", "Dual Easy","Dual Intermediate","Dual Hard"))+
-  labs(title="Effort and attention questionnaire (Experiment 1)",
-       x="Measure", y = "Participant estimate",
+  labs(x="Measure", y = "Participant estimate",
        fill = "Task")+
   facet_wrap(~task,labeller = labeller(task = facet_labels))+
   theme_minimal() # Generate a figure
@@ -1105,8 +1099,7 @@ plot_effortques_speechvisual_sdfiltered<-ggplot(dat_exp2_question_n192_long_sdfi
   scale_y_continuous(breaks = seq(0, 100, by = 10))+
   scale_fill_npg(labels = c("Single", "Visual","Phonological","Lexical"))+
   #scale_colour_npg(labels = c("Single", "Visual","Phonological","Lexical"))+
-  labs(title="Effort and attention questionnaire (Experiment 2)",
-       x="Measure", y = "Participant estimate",
+  labs(x="Measure", y = "Participant estimate",
        fill = "Task")+
   facet_wrap(~task,labeller = labeller(task = facet_labels))+
   theme_minimal()
