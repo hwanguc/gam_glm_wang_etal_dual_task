@@ -1,5 +1,7 @@
 # Copyright: Han Wang, June 8th 2022.
 
+
+# Edited on July 14th 2022 (included Bayes factor analysis)
 # Edited on July 7th 2022 (removed the figure titles)
 # Edited on June 14th 2022 (updated the figure numbers).
 
@@ -192,14 +194,50 @@ dat_exp2_question_n192_long_sdfiltered<-read.csv("dat_exp2_question_n192_long_sd
 ## Model
 
 m_fig3_full<-gam(cbind(count_correct,3-count_correct) ~ relevel(as.factor(task), ref="speech_single") + s(trial, k = -1, bs = "tp", by=task)+
-                          s(participant,bs='re')+s(participant,trial,bs='re')+s(sentence,bs='re')+s(sentence,task,bs='re'),
-                        data = dat_dual_speech_n192,family = binomial(link="logit"),method = "ML") # the saturated model including all terms allowed by the experimental design
+                   s(participant,bs='re')+s(participant,trial,bs='re')+s(sentence,bs='re')+s(sentence,task,bs='re'),
+                 data = dat_dual_speech_n192,family = binomial(link="logit"),method = "ML") # the saturated model including all terms allowed by the experimental design
 
 m_fig3_final<-gam(cbind(count_correct,3-count_correct) ~ relevel(as.factor(task), ref="speech_single") + s(trial, k = -1, bs = "tp", by=task)+
                     s(participant,bs='re')+s(participant,trial,bs='re'),
                   data = dat_dual_speech_n192,family = binomial(link="logit"),method = "ML") # the final GAMM reported in the paper
 
 summary(m_fig3_final) # model output can be found in Table 1 in the paper
+
+
+## Bayes factor analysis
+
+### Single-task condition only: Models with (H1) and without (H0) the Trial smooth
+
+m_fig3_final_SpOnly<-gam(cbind(count_correct,3-count_correct) ~ s(trial, k = -1, bs = "tp")+
+                           s(participant,bs='re')+s(participant,trial,bs='re'),
+                         data = dat_dual_speech_n192[dat_dual_speech_n192$task=='speech_single',],family = binomial(link="logit"),method = "ML") # the final GAMM reported in the paper
+
+summary(m_fig3_final_SpOnly) # the H1 model
+
+m_fig3_final_SpOnly_h0<-gam(cbind(count_correct,3-count_correct) ~
+                              s(participant,bs='re')+s(participant,trial,bs='re'),
+                            data = dat_dual_speech_n192[dat_dual_speech_n192$task=='speech_single',],family = binomial(link="logit"),method = "ML") # the final GAMM reported in the paper
+
+summary(m_fig3_final_SpOnly_h0) # the H0 model
+
+
+BF01_m_fig3_SpOnly<-exp((BIC(m_fig3_final_SpOnly) - BIC(m_fig3_final_SpOnly_h0))/2) # Get BF01 by contrasting the BIC of the two models
+BF10_m_fig3_SpOnly<-1/BF01_m_fig3_SpOnly # Get BF10
+
+
+### All task conditions: Models with (H1) and without (H0) the by-task smooths of Trial
+
+m_fig3_final_h0<-gam(cbind(count_correct,3-count_correct) ~ relevel(as.factor(task), ref="speech_single") + s(trial, k = -1, bs = "tp")+
+                       s(participant,bs='re')+s(participant,trial,bs='re'),
+                     data = dat_dual_speech_n192,family = binomial(link="logit"),method = "ML") 
+
+summary(m_fig3_final_h0) # the H0 model (see m_fig3_final above for the H1 model)
+
+BF01_m_fig3<-exp((BIC(m_fig3_final) - BIC(m_fig3_final_h0))/2) # Get BF01
+BF10_m_fig3<-1/BF01_m_fig3 # Get BF10
+
+
+
 
 ## Figure
 
@@ -444,7 +482,7 @@ plot_m_fig7_final+
 library(gratia)
 
 newd_exp2_speech <- tidyr::expand(dat_dual_speech_n192_nophonrep, nesting(participant,task),
-                      trial = unique(trial))
+                                  trial = unique(trial))
 
 fd_difftasks <- derivatives(m_fig7_final, type = "central", term = "s(trial)", newdata = newd_exp2_speech, unconditional = TRUE,partial_match = TRUE,interval = "simultaneous",n_sim = 10000)
 fd_difftasks<-fd_difftasks %>%
@@ -486,12 +524,12 @@ ggplot(dat_fd_reorder_difftasks,
 ## Model (also see comments on Figure 3 for how the code is structured):
 
 m_fig9_full<-gam(correctness~relevel(as.factor(task), ref="visual")+s(trial, k = -1, bs = "tp", by=task)+
-                    s(participant,bs='re')+s(participant,trial,bs='re')+s(prompt,bs='re')+s(prompt,task,bs='re'),
-                  data=dat_dual_n192_nophonrep, family=binomial(link="logit"),method = "ML")
+                   s(participant,bs='re')+s(participant,trial,bs='re')+s(prompt,bs='re')+s(prompt,task,bs='re'),
+                 data=dat_dual_n192_nophonrep, family=binomial(link="logit"),method = "ML")
 
 m_fig9_final<-gam(correctness~relevel(as.factor(task), ref="visual")+s(trial, k = -1, bs = "tp", by=task)+
-                     s(participant,bs='re')+s(participant,trial,bs='re'),
-                   data=dat_dual_n192_nophonrep, family=binomial(link="logit"),method = "ML")
+                    s(participant,bs='re')+s(participant,trial,bs='re'),
+                  data=dat_dual_n192_nophonrep, family=binomial(link="logit"),method = "ML")
 summary(m_fig9_final) # Model output can be found in Table C4 in the paper
 
 
@@ -500,18 +538,18 @@ summary(m_fig9_final) # Model output can be found in Table C4 in the paper
 ilink<-family(m_fig9_final)$linkinv
 
 m_fig9_final_new_data <- tidyr::expand(dat_dual_n192_nophonrep, nesting(participant,prompt,task),
-                                        trial = unique(trial))
+                                       trial = unique(trial))
 
 m_fig9_final_prediction<-bind_cols(m_fig9_final_new_data, setNames(as_tibble(predict(m_fig9_final, m_fig9_final_new_data,
-                                                                                       exclude = c("s(participant)", "s(participant,trial)", "s(prompt)", "s(prompt,task)"),
-                                                                                       se.fit = TRUE)[1:2]), c('fit_link','se_link')))
+                                                                                     exclude = c("s(participant)", "s(participant,trial)", "s(prompt)", "s(prompt,task)"),
+                                                                                     se.fit = TRUE)[1:2]), c('fit_link','se_link')))
 
 
 
 m_fig9_final_prediction <- mutate(m_fig9_final_prediction,
-                                   fit_resp  = ilink(fit_link),
-                                   right_upr = ilink(fit_link + (2 * se_link)),
-                                   right_lwr = ilink(fit_link - (2 * se_link)))
+                                  fit_resp  = ilink(fit_link),
+                                  right_upr = ilink(fit_link + (2 * se_link)),
+                                  right_lwr = ilink(fit_link - (2 * se_link)))
 
 m_fig9_final_prediction<-aggregate(cbind(fit_link,se_link,fit_resp,right_upr,right_lwr)~trial+task,data=m_fig9_final_prediction,FUN=mean)
 
@@ -876,8 +914,8 @@ summary(m_figd5_full)
 
 
 m_figd5_final<-glmer(cbind(count_correct,3-count_correct)~1+task+(1|participant),
-                 data=dat_single_40t_60t_n78, family = binomial(link = "logit"), 
-                 control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=10e6)))
+                     data=dat_single_40t_60t_n78, family = binomial(link = "logit"), 
+                     control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=10e6)))
 summary(m_figd5_final)
 
 
