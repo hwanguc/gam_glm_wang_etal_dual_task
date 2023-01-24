@@ -2,7 +2,7 @@
 
 This respiratory contains the data and R code for the the dual-task experiments in Wang et al. (under review).
 
-**Data**:
+**Data (the files below are required for replicating the analyses covered in the paper)**:
 
 **_dat_exp1_maintask.csv_** - data for the main task in Experiment 1.
 
