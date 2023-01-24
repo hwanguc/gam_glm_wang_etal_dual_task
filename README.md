@@ -1,6 +1,6 @@
 # gam_glm_wang_etal_dual_task
 
-This respiratory contains the data and R code for the the dual-task experiments in Wang et al. (under review).
+This respiratory contains the data and R code (generalised additive and linear models) for the the dual-task experiments in Wang et al. (under review).
 
 **Data (the files below are required for replicating the analyses covered in the paper)**:
 
