@@ -853,28 +853,28 @@ plot_effortques_speechvisual_sdfiltered+
 
 ques_speechvisual_speecheffort_m_lm_nooutlier<-lm(effort.speech ~ relevel(as.factor(task.difficulty), ref="speech_single"), na.action = na.omit, data=dat_exp1_question_n192_wide_4measures_sdfiltered) #simple linear regression
 
-summary(ques_speechvisual_speecheffort_m_lm_nooutlier) # Model output can be found in Table C3
+summary(ques_speechvisual_speecheffort_m_lm_nooutlier) # Model output can be found in Table B3
 
 
 ### attention speech (no outlier)
 
 ques_speechvisual_speechattention_m_lm_nooutlier<-lm(attention.speech ~ relevel(as.factor(task.difficulty), ref="speech_single"), na.action = na.omit, data=dat_exp1_question_n192_wide_4measures_sdfiltered) 
 
-summary(ques_speechvisual_speechattention_m_lm_nooutlier) # Model output can be found in Table C3
+summary(ques_speechvisual_speechattention_m_lm_nooutlier) # Model output can be found in Table B3
 
 
 ### effort visual (no outlier)
 
 ques_speechvisual_visualeffort_m_lm_nooutlier<-lm(effort.visual ~ relevel(as.factor(task.difficulty), ref="speech_td_48_60"), na.action = na.omit, data=dat_exp1_question_n192_wide_4measures_sdfiltered)
 
-summary(ques_speechvisual_visualeffort_m_lm_nooutlier) # Model output can be found in Table C3
+summary(ques_speechvisual_visualeffort_m_lm_nooutlier) # Model output can be found in Table B3
 
 
 ### attention visual (no outlier)
 
 ques_speechvisual_visualattention_m_lm_nooutlier<-lm(attention.visual ~ relevel(as.factor(task.difficulty), ref="speech_td_48_60"), na.action=na.omit, data=dat_exp1_question_n192_wide_4measures_sdfiltered)
 
-summary(ques_speechvisual_visualattention_m_lm_nooutlier) # Model output can be found in Table C3
+summary(ques_speechvisual_visualattention_m_lm_nooutlier) # Model output can be found in Table B3
 
 
 
@@ -919,25 +919,25 @@ plot_effortques_speechvisual_sdfiltered+
 
 ques_speechvisual_speecheffort_m_lm_nophonrep_nooutlier<-lm(effort.speech ~ relevel(as.factor(task.type), ref="speech_single"), na.action = na.omit, data=dat_exp2_question_n192_wide_4measures_sdfiltered_nophonrep)
 
-summary(ques_speechvisual_speecheffort_m_lm_nophonrep_nooutlier) # Model output can be found in Table C6
+summary(ques_speechvisual_speecheffort_m_lm_nophonrep_nooutlier) # Model output can be found in Table B6
 
 
 #### attention speech (no outlier)
 
 ques_speechvisual_speechattention_m_lm_nophonrep_nooutlier<-lm(attention.speech ~ relevel(as.factor(task.type), ref="speech_single"), na.action = na.omit, data=dat_exp2_question_n192_wide_4measures_sdfiltered_nophonrep)
 
-summary(ques_speechvisual_speechattention_m_lm_nophonrep_nooutlier) # Model output can be found in Table C6
+summary(ques_speechvisual_speechattention_m_lm_nophonrep_nooutlier) # Model output can be found in Table B6
 
 
 #### effort secondary (no outlier)
 
 ques_speechtsecondary_tsecondaryeffort_m_lm_nophonrep_nooutlier<-lm(effort.tsecondary ~ relevel(as.factor(task.type), ref="visual"), na.action = na.omit, data=dat_exp2_question_n192_wide_4measures_sdfiltered_nophonrep)
 
-summary(ques_speechtsecondary_tsecondaryeffort_m_lm_nophonrep_nooutlier) # Model output can be found in Table C6
+summary(ques_speechtsecondary_tsecondaryeffort_m_lm_nophonrep_nooutlier) # Model output can be found in Table B6
 
 
 #### attention secondary (no outlier)
 
 ques_speechtsecondary_tsecondaryattention_m_lm_nophonrep_nooutlier<-lm(attention.tsecondary ~ relevel(as.factor(task.type), ref="visual"), na.action=na.omit, data=dat_exp2_question_n192_wide_4measures_sdfiltered_nophonrep)
 
-summary(ques_speechtsecondary_tsecondaryattention_m_lm_nophonrep_nooutlier) # Model output can be found in Table C6
+summary(ques_speechtsecondary_tsecondaryattention_m_lm_nophonrep_nooutlier) # Model output can be found in Table B6
