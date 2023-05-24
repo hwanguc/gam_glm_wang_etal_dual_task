@@ -1,10 +1,11 @@
 # Copyright: Han Wang, June 8th 2022.
 
+# Edited on May 22nd 2023 (Added an analysis on the relationship between the slopes of the two tasks)
 # Edited on January 24th 2023 (Updated comments and fixed typos)
 # Edited on August 16th 2022 (implementing GLMMs for the main analysis)
 # Edited on July 14th 2022 (included Bayes factor analysis)
 # Edited on July 7th 2022 (removed the figure titles)
-# Edited on June 14th 2022 (updated the figure numbers).
+# Edited on June 14th 2022 (updated the figure numbers)
 
 
 # Load packages and define some functions
@@ -14,6 +15,7 @@ library(dplyr)
 library(tidyr)
 
 library(ggplot2)
+library(ggpubr)
 library(ggsci)
 library(ggeffects)
 library(sjPlot)
@@ -941,3 +943,216 @@ summary(ques_speechtsecondary_tsecondaryeffort_m_lm_nophonrep_nooutlier) # Model
 ques_speechtsecondary_tsecondaryattention_m_lm_nophonrep_nooutlier<-lm(attention.tsecondary ~ relevel(as.factor(task.type), ref="visual"), na.action=na.omit, data=dat_exp2_question_n192_wide_4measures_sdfiltered_nophonrep)
 
 summary(ques_speechtsecondary_tsecondaryattention_m_lm_nophonrep_nooutlier) # Model output can be found in Table B6
+
+
+# Additional analysis on random slopes:
+
+## data curation
+
+dat_exp1_randslopes<-dat_dual_speech_n192 %>%
+  filter(task != "speech_single" & trial <= 20)
+
+dat_exp2_randslopes<-dat_dual_speech_n192_nophonrep %>%
+  filter(task != "speech_single" & trial <= 20)
+
+## models
+
+m_exp1_sp_randslopes<-glmer(cbind(count_correct,3-count_correct)~1+log(trial)*task+(1+log(trial)|participant),
+                            data=dat_exp1_randslopes, family = binomial(link = "logit"), 
+                            control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=20e5)))
+summary(m_exp1_sp_randslopes)
+
+gg_m_exp1_sp_randslopes<-ggpredict(m_exp1_sp_randslopes, terms = c("trial[all]","task"))
+plot(gg_m_exp1_sp_randslopes)
+
+
+m_exp1_2nd_randslopes<-glmer(correctness~1+log(trial)*task+(1+log(trial)|participant),
+                             data=dat_exp1_randslopes, family = binomial(link = "logit"), 
+                             control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
+summary(m_exp1_2nd_randslopes)
+
+gg_m_exp1_2nd_randslopes<-ggpredict(m_exp1_2nd_randslopes, terms = c("trial[all]","task"))
+plot(gg_m_exp1_2nd_randslopes)
+
+
+m_exp2_sp_randslopes<-glmer(cbind(count_correct,3-count_correct)~1+log(trial)*task+(1+log(trial)|participant),
+                            data=dat_exp2_randslopes, family = binomial(link = "logit"), 
+                            control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=20e5)))
+summary(m_exp2_sp_randslopes)
+
+gg_m_exp2_sp_randslopes<-ggpredict(m_exp2_sp_randslopes, terms = c("trial[all]","task"))
+plot(gg_m_exp2_sp_randslopes)
+
+
+m_exp2_2nd_randslopes<-glmer(correctness~1+log(trial)*task+(1+log(trial)|participant),
+                             data=dat_exp2_randslopes, family = binomial(link = "logit"), 
+                             control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
+summary(m_exp2_2nd_randslopes)
+
+gg_m_exp2_2nd_randslopes<-ggpredict(m_exp2_2nd_randslopes, terms = c("trial[all]","task"))
+plot(gg_m_exp2_2nd_randslopes)
+
+
+## extract random slopes per condition from the models and store them to a spreadsheet
+
+coefs<-data.frame(matrix(,nrow=48,ncol=12))
+
+exps<-c("exp1","exp2")
+tasks<-c("sp","2nd")
+conds<-c("speech_td_48_60","speech_td_24_36","speech_td_0_12","visual","phonological","lexical")
+
+i<-1
+
+for (exp in exps) {
+    
+    # dataset and conditions
+    if (exp == "exp1") {
+      current_dat<-dat_exp1_randslopes
+      conds_lst<-conds[1:3]
+    } else {
+      current_dat<-dat_exp2_randslopes
+      conds_lst<-conds[4:6]
+    }
+    
+    # extract the random slopes
+    
+    for (cond in conds_lst) {
+      
+      # fit a model
+      
+      current_m_sp<-glmer(cbind(count_correct,3-count_correct)~1+log(trial)*relevel(as.factor(task), ref=cond)+(1+log(trial)|participant),
+                          data=current_dat, family = binomial(link = "logit"), 
+                          control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
+      current_m_2nd<-glmer(correctness~1+log(trial)*relevel(as.factor(task), ref=cond)+(1+log(trial)|participant),
+                           data=current_dat, family = binomial(link = "logit"), 
+                           control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
+      
+      current_m_sp_coef<-coef(current_m_sp)$participant
+      current_m_2nd_coef<-coef(current_m_2nd)$participant
+      
+      dat_currentcond_subj_lst<-current_dat %>%
+        filter(task == cond) %>%
+        pull(participant) %>%
+        as.character() %>%
+        unique()
+      
+      dat_curretcond_subj_idx<-is.element(row.names(current_m_sp_coef),dat_currentcond_subj_lst)
+      
+      m_sp_coef<-current_m_sp_coef[dat_curretcond_subj_idx,]
+      
+      names(coefs)[i]<-paste("logtrial",exp,tasks[1],cond,sep = "_")
+      coefs[i]<-m_sp_coef$`log(trial)`
+      i<-i+1
+      
+      
+      m_2nd_coef<-current_m_2nd_coef[dat_curretcond_subj_idx,]
+      
+      names(coefs)[i]<-paste("logtrial",exp,tasks[2],cond,sep = "_")
+      coefs[i]<-m_2nd_coef$`log(trial)`
+      i<-i+1
+      
+    } 
+}
+
+## Figure C8: correlations between individual slopes of the speech and secondary task conditions
+
+spe_vise<-ggplot(data = coefs, aes(x=logtrial_exp1_sp_speech_td_48_60, y=logtrial_exp1_2nd_speech_td_48_60)) + 
+  geom_point()+
+  geom_smooth(method=lm)+
+  stat_cor(p.accuracy = 0.001, r.accuracy = 0.01)+
+  labs(x="Speech task under easy visual task (Exp 1)", y = "Easy visual task (Exp 1)")+
+  theme_bw()
+
+spe_vise_formatted<-spe_vise+theme(axis.title.x = element_text(size=12,angle = 0, hjust = 0.5),
+                                   axis.title.y = element_text(size=12,angle = 90, hjust = 0.5),
+                                   axis.text.x = element_text(size=10,angle = 0, hjust = 0.5),
+                                   axis.text.y = element_text(size=10,angle = 0, hjust = 0.5),
+                                   panel.grid.major.x = element_line(color = "grey90"),
+                                   panel.grid.minor.x = element_line(color = "grey90"))
+
+spi_visi<-ggplot(data = coefs, aes(x=logtrial_exp1_sp_speech_td_24_36, y=logtrial_exp1_2nd_speech_td_24_36)) + 
+  geom_point()+
+  geom_smooth(method=lm)+
+  stat_cor(p.accuracy = 0.001, r.accuracy = 0.01)+
+  labs(x="Speech task under intermediate visual task (Exp 1)", y = "Intermediate visual task (Exp 1)")+
+  theme_bw()
+
+spi_visi_formatted<-spi_visi+theme(axis.title.x = element_text(size=12,angle = 0, hjust = 0.5),
+                                   axis.title.y = element_text(size=12,angle = 90, hjust = 0.5),
+                                   axis.text.x = element_text(size=10,angle = 0, hjust = 0.5),
+                                   axis.text.y = element_text(size=10,angle = 0, hjust = 0.5),
+                                   panel.grid.major.x = element_line(color = "grey90"),
+                                   panel.grid.minor.x = element_line(color = "grey90"))
+
+
+sph_vish<-ggplot(data = coefs, aes(x=logtrial_exp1_sp_speech_td_0_12, y=logtrial_exp1_2nd_speech_td_0_12)) + 
+  geom_point()+
+  geom_smooth(method=lm)+
+  stat_cor(p.accuracy = 0.001, r.accuracy = 0.01)+
+  labs(x="Speech task under hard visual task (Exp 1)", y = "Hard visual task (Exp 1)")+
+  theme_bw()
+
+sph_vish_formatted<-sph_vish+theme(axis.title.x = element_text(size=12,angle = 0, hjust = 0.5),
+                                   axis.title.y = element_text(size=12,angle = 90, hjust = 0.5),
+                                   axis.text.x = element_text(size=10,angle = 0, hjust = 0.5),
+                                   axis.text.y = element_text(size=10,angle = 0, hjust = 0.5),
+                                   panel.grid.major.x = element_line(color = "grey90"),
+                                   panel.grid.minor.x = element_line(color = "grey90"))
+
+
+sp_vis<-ggplot(data = coefs, aes(x=logtrial_exp2_sp_visual, y=logtrial_exp2_2nd_visual)) + 
+  geom_point()+
+  geom_smooth(method=lm)+
+  stat_cor(p.accuracy = 0.001, r.accuracy = 0.01)+
+  labs(x="Speech task under visual task (Exp 2)", y = "Visual task (Exp 2)")+
+  theme_bw()
+
+sp_vis_formatted<-sp_vis+theme(axis.title.x = element_text(size=12,angle = 0, hjust = 0.5),
+                               axis.title.y = element_text(size=12,angle = 90, hjust = 0.5),
+                               axis.text.x = element_text(size=10,angle = 0, hjust = 0.5),
+                               axis.text.y = element_text(size=10,angle = 0, hjust = 0.5),
+                               panel.grid.major.x = element_line(color = "grey90"),
+                               panel.grid.minor.x = element_line(color = "grey90"))
+
+
+sp_phon<-ggplot(data = coefs, aes(x=logtrial_exp2_sp_phonological, y=logtrial_exp2_2nd_phonological)) + 
+  geom_point()+
+  geom_smooth(method=lm)+
+  stat_cor(p.accuracy = 0.001, r.accuracy = 0.01)+
+  labs(x="Speech task under phonological task (Exp 2)", y = "Phonological task (Exp 2)")+
+  theme_bw()
+
+sp_phon_formatted<-sp_phon+theme(axis.title.x = element_text(size=12,angle = 0, hjust = 0.5),
+                               axis.title.y = element_text(size=12,angle = 90, hjust = 0.5),
+                               axis.text.x = element_text(size=10,angle = 0, hjust = 0.5),
+                               axis.text.y = element_text(size=10,angle = 0, hjust = 0.5),
+                               panel.grid.major.x = element_line(color = "grey90"),
+                               panel.grid.minor.x = element_line(color = "grey90"))
+
+
+
+sp_lex<-ggplot(data = coefs, aes(x=logtrial_exp2_sp_lexical, y=logtrial_exp2_2nd_lexical)) + 
+  geom_point()+
+  geom_smooth(method=lm)+
+  stat_cor(p.accuracy = 0.001, r.accuracy = 0.01)+
+  labs(x="Speech task under lexical task (Exp 2)", y = "Lexical task (Exp 2)")+
+  theme_bw()
+
+sp_lex_formatted<-sp_lex+theme(axis.title.x = element_text(size=12,angle = 0, hjust = 0.5),
+                                 axis.title.y = element_text(size=12,angle = 90, hjust = 0.5),
+                                 axis.text.x = element_text(size=10,angle = 0, hjust = 0.5),
+                                 axis.text.y = element_text(size=10,angle = 0, hjust = 0.5),
+                                 panel.grid.major.x = element_line(color = "grey90"),
+                                 panel.grid.minor.x = element_line(color = "grey90"))
+
+
+task_all <- ggarrange(spe_vise_formatted, spi_visi_formatted,sph_vish_formatted,sp_vis_formatted,sp_phon_formatted,sp_lex_formatted,
+                      font.label = list(size = 12, face = "bold", color ="black"),ncol = 3, nrow = 2)
+
+
+annotate_figure(task_all,
+                bottom = text_grob("Beta estimate (Speech task)",
+                                   hjust = 0.5, size = 13),
+                left = text_grob("Beta estimate (Secondary task)", rot = 90,size = 13)
+)
+
