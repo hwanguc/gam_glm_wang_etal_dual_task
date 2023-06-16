@@ -1,7 +1,8 @@
 # Copyright: Han Wang, June 8th 2022.
 
+# Edited on June 15th 2023 (updated the figure numbers)
 # Edited on May 22nd 2023 (Added an analysis on the relationship between the slopes of the two tasks)
-# Edited on January 24th 2023 (Updated comments and fixed typos)
+# Edited on January 24th 2023 (updated comments and fixed typos)
 # Edited on August 16th 2022 (implementing GLMMs for the main analysis)
 # Edited on July 14th 2022 (included Bayes factor analysis)
 # Edited on July 7th 2022 (removed the figure titles)
@@ -76,7 +77,7 @@ dat_dual_n192_secondary_acc <- summarySE(dat_dual_n192, measurevar="correctness"
 dat_dual_n192_sndcorrect_rt_se<-summarySE(dat_dual_n192_sndcorrect, measurevar="rt", groupvars=c("trial","task"))
 detach("package:Rmisc", unload=TRUE)
 
-### Single task performance (current vs pilot experiments, figure c5)
+### Single task performance (current vs pilot experiments, Figure C3)
 
 dat_single_40t_60t_n78<-read.csv("dat_singlespeech_current_pilot.csv")
 dat_single_40t_60t_n78$word_percent<-dat_single_40t_60t_n78$count_correct/3*100
@@ -340,13 +341,13 @@ m_fig4_final_prediction_reorder<-gg_m_fig4_poly_glmer_3 %>%
   mutate(task = fct_relevel(task, m_fig4_final_reorder))
 
 
-plot_m_fig4_final<-ggplot(dat_dual_n192_secondary_acc_reorder, aes(x=trial, y=correctness,color=task, shape=task)) +
-  geom_errorbar(aes(ymin=correctness-se, ymax=correctness+se), width=.1) +
+plot_m_fig4_final<-ggplot(dat_dual_n192_secondary_acc_reorder, aes(x=trial, y=correctness*100,color=task, shape=task)) +
+  geom_errorbar(aes(ymin=(correctness-se)*100, ymax=(correctness+se)*100), width=.1) +
   geom_point() +
-  geom_line(data=m_fig4_final_prediction_reorder, aes(x=x, y=predicted,color=task), size=.6) +
-  geom_ribbon(data=m_fig4_final_prediction_reorder, aes(ymin=conf.low, ymax=conf.high, x=x, y=predicted,fill=task,color=task), alpha = 0.2) +# error band
-  scale_y_continuous(breaks = seq(0, 1, by = 0.1),limits=c(0.4, 1))+
-  labs(x="Trial number", y = "Accuracy")+
+  geom_line(data=m_fig4_final_prediction_reorder, aes(x=x, y=predicted*100,color=task), size=.6) +
+  geom_ribbon(data=m_fig4_final_prediction_reorder, aes(ymin=conf.low*100, ymax=conf.high*100, x=x, y=predicted*100,fill=task,color=task), alpha = 0.2) +# error band
+  scale_y_continuous(breaks = seq(0, 100, by = 10),limits=c(40, 100))+
+  labs(x="Trial number", y = "% Correct")+
   theme_minimal()+
   facet_wrap(~task,
              labeller = labeller(task = facet_labels))
@@ -363,73 +364,57 @@ plot_m_fig4_final+
         legend.position = "none")
 
 
-# Figure 6: Trial-wise % correct in speech tasks (Experiment 2)
+# Figure 5: GLMM-estimated visual task RTs in millisecond at different task difficulty in Experiment 1
 
+## Model:
 
-## Log-transformed GLMER models:
+### full:
 
-### glmer_full
+m_fig5_glmer_full<-glmer(rt~1+log(trial)*task+(1+log(trial)|participant)+(1+task|prompt),
+                         data=dat_dual_n192_sndcorrect, family = Gamma(link = "log"), 
+                         control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
 
-m_fig6_log_glmer_full<-glmer(cbind(count_correct,3-count_correct)~1+log(trial)*task+(1+log(trial)|participant)+(1+task|sentence),
-                             data=dat_dual_speech_n192_nophonrep, family = binomial(link = "logit"), 
-                             control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=20e5)))
-summary(m_fig6_log_glmer_full)
+summary(m_fig5_glmer_full)
 
+### glmer_1 (best fitting model)
 
-### glmer_final (best fitting model)
+m_fig5_glmer_1<-glmer(rt~1+log(trial)*task+(1|participant)+(1|prompt),
+                      data=dat_dual_n192_sndcorrect, family = Gamma(link = "log"), 
+                      control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
 
-m_fig6_log_glmer_final<-glmer(cbind(count_correct,3-count_correct)~1+log(trial)*task+(1+log(trial)|participant),
-                              data=dat_dual_speech_n192_nophonrep, family = binomial(link = "logit"), 
-                              control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=20e5)))
-summary(m_fig6_log_glmer_final)
+summary(m_fig5_glmer_1)
 
+gg_m_fig5_glmer_1<-ggpredict(m_fig5_glmer_1, terms = c("trial[all]","task")) # save the prediction from the model using ggpredict()
+plot(gg_m_fig5_glmer_1) # plot the model
 
-m_fig6_log_glmer_final_phon<-glmer(cbind(count_correct,3-count_correct)~1+log(trial)*relevel(as.factor(task), ref="phonological")+(1+log(trial)|participant),
-                              data=dat_dual_speech_n192_nophonrep, family = binomial(link = "logit"), 
-                              control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=20e5)))
-summary(m_fig6_log_glmer_final_phon)
-
-m_fig6_log_glmer_final_lexical<-glmer(cbind(count_correct,3-count_correct)~1+log(trial)*relevel(as.factor(task), ref="lexical")+(1+log(trial)|participant),
-                                   data=dat_dual_speech_n192_nophonrep, family = binomial(link = "logit"), 
-                                   control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=20e5)))
-summary(m_fig6_log_glmer_final_lexical)
-
-m_fig6_log_glmer_final_single<-glmer(cbind(count_correct,3-count_correct)~1+log(trial)*relevel(as.factor(task), ref="speech_single")+(1+log(trial)|participant),
-                                      data=dat_dual_speech_n192_nophonrep, family = binomial(link = "logit"), 
-                                      control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=20e5)))
-summary(m_fig6_log_glmer_final_single)
-
-m_fig6_log_glmer_final_visual<-glmer(cbind(count_correct,3-count_correct)~1+log(trial)*relevel(as.factor(task), ref="visual")+(1+log(trial)|participant),
-                                     data=dat_dual_speech_n192_nophonrep, family = binomial(link = "logit"), 
-                                     control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=20e5)))
-summary(m_fig6_log_glmer_final_visual)
+gg_m_fig5_glmer_1$task<-gg_m_fig5_glmer_1$group
 
 
 ### plot
 
-m_fig6_final_reorder<-c('speech_single','visual','phonological','lexical') # reorder the levels for plotting
+m_fig5_final_reorder<-c('speech_td_48_60','speech_td_24_36','speech_td_0_12')
 
-facet_labels<-c(lexical = "Dual Lexical", phonological = "Dual Phonological",speech_single = 'Single', visual = 'Dual Visual') # Set the label for panels in the plot
+facet_labels<-c(speech_td_0_12 = "Dual Hard",speech_td_24_36 = 'Dual Intermediate', speech_td_48_60 = 'Dual Easy')
 
-dat_dual_speech_n192_nophonrep_se_reorder <- dat_dual_speech_n192_nophonrep_se %>% 
-  mutate(task = fct_relevel(task, m_fig6_final_reorder)) # reorder the raw data per level of task
+dat_dual_n192_sndcorrect_rt_se_reorder <- dat_dual_n192_sndcorrect_rt_se %>% 
+  mutate(task = fct_relevel(task, m_fig5_final_reorder))
 
-m_fig6_final_prediction_reorder<-gg_m_fig6_log_glmer_final %>% 
-  mutate(task = fct_relevel(task, m_fig6_final_reorder)) # reorder the prediction per level of task
+m_fig5_final_prediction_reorder<-gg_m_fig5_glmer_1 %>% 
+  mutate(task = fct_relevel(task, m_fig5_final_reorder))
 
-plot_m_fig6_final<-ggplot(dat_dual_speech_n192_nophonrep_se_reorder,aes(x=trial, y=word_percent,color=task, shape=task)) + 
-  geom_errorbar(aes(ymin=word_percent-se, ymax=word_percent+se), width=.1) +
+
+plot_m_fig5_final<-ggplot(dat_dual_n192_sndcorrect_rt_se_reorder, aes(x=trial, y=rt,color=task, shape=task)) + 
+  geom_errorbar(aes(ymin=rt-se, ymax=rt+se), width=.1) +
   geom_point() +
-  geom_line(data=m_fig6_final_prediction_reorder, aes(x=x, y=predicted*100,color=task), size=.6) +
-  geom_ribbon(data=m_fig6_final_prediction_reorder, aes(ymin=conf.low*100, ymax=conf.high*100, x=x, y=predicted*100,fill=task,color=task), alpha = 0.2) +# error band
-  scale_y_continuous(breaks = seq(0, 100, by = 10),limits=c(0, 100))+
-  labs(x="Trial number", y = "%Correct")+
+  geom_line(data=m_fig5_final_prediction_reorder, aes(x=x, y=predicted,color=task), size=.6) +
+  geom_ribbon(data=m_fig5_final_prediction_reorder, aes(ymin=conf.low, ymax=conf.high, x=x, y=predicted,fill=task,color=task), alpha = 0.2) +# error band
+  scale_y_continuous(breaks = seq(300, 1400, by = 200),limits=c(300, 1400))+
+  labs(x="Trial number", y = "RT (ms)")+
   theme_minimal()+
   facet_wrap(~task,
-             labeller = labeller(task = facet_labels)) # main figure
+             labeller = labeller(task = facet_labels))
 
-
-plot_m_fig6_final+
+plot_m_fig5_final+
   theme(plot.title = element_text(size = 13,hjust=0.5), 
         axis.text.x = element_text(size=11.5,angle = 0, hjust = 0.5),
         axis.title.x = element_text(size=12),
@@ -437,57 +422,79 @@ plot_m_fig6_final+
         strip.text.x = element_text(size = 11),
         legend.title = element_text(size=12),
         legend.text = element_text(size=11),
-        legend.position = "none") # update the formatting for the plot
+        legend.position = "none")
 
 
-# Figure 7: Trial-wise accuracy in secondary tasks (Experiment 2)
 
-## Model (also see comments on Figure 3 for how the code is structured):
+m_fig5_glmer_1_relvl2436<-glmer(rt~1+log(trial)*relevel(as.factor(task), ref="speech_td_24_36")+(1|participant)+(1|prompt),
+                                data=dat_dual_n192_sndcorrect, family = Gamma(link = "log"), 
+                                control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
+
+summary(m_fig5_glmer_1_relvl2436)
+
+
+
+# Figure 7: Trial-wise % correct in speech tasks (Experiment 2)
+
+
+## Log-transformed GLMER models:
 
 ### glmer_full
 
-m_fig7_log_glmer_full<-glmer(correctness~1+log(trial)*task+(1+log(trial)|participant)+(1+task|prompt),
-                             data=dat_dual_n192_nophonrep, family = binomial(link = "logit"), 
-                             control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
+m_fig7_log_glmer_full<-glmer(cbind(count_correct,3-count_correct)~1+log(trial)*task+(1+log(trial)|participant)+(1+task|sentence),
+                             data=dat_dual_speech_n192_nophonrep, family = binomial(link = "logit"), 
+                             control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=20e5)))
 summary(m_fig7_log_glmer_full)
+
 
 ### glmer_final (best fitting model)
 
-m_fig7_log_glmer_final<-glmer(correctness~1+log(trial)*task+(1+log(trial)|participant),
-                              data=dat_dual_n192_nophonrep, family = binomial(link = "logit"), 
-                              control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
+m_fig7_log_glmer_final<-glmer(cbind(count_correct,3-count_correct)~1+log(trial)*task+(1+log(trial)|participant),
+                              data=dat_dual_speech_n192_nophonrep, family = binomial(link = "logit"), 
+                              control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=20e5)))
 summary(m_fig7_log_glmer_final)
 
 
-m_fig7_log_glmer_final_phon<-glmer(correctness~1+log(trial)*relevel(as.factor(task), ref="phonological")+(1+log(trial)|participant),
-                              data=dat_dual_n192_nophonrep, family = binomial(link = "logit"), 
-                              control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
+m_fig7_log_glmer_final_phon<-glmer(cbind(count_correct,3-count_correct)~1+log(trial)*relevel(as.factor(task), ref="phonological")+(1+log(trial)|participant),
+                              data=dat_dual_speech_n192_nophonrep, family = binomial(link = "logit"), 
+                              control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=20e5)))
 summary(m_fig7_log_glmer_final_phon)
 
-m_fig7_log_glmer_final_vis<-glmer(correctness~1+log(trial)*relevel(as.factor(task), ref="visual")+(1+log(trial)|participant),
-                                   data=dat_dual_n192_nophonrep, family = binomial(link = "logit"), 
-                                   control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
-summary(m_fig7_log_glmer_final_vis)
+m_fig7_log_glmer_final_lexical<-glmer(cbind(count_correct,3-count_correct)~1+log(trial)*relevel(as.factor(task), ref="lexical")+(1+log(trial)|participant),
+                                   data=dat_dual_speech_n192_nophonrep, family = binomial(link = "logit"), 
+                                   control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=20e5)))
+summary(m_fig7_log_glmer_final_lexical)
+
+m_fig7_log_glmer_final_single<-glmer(cbind(count_correct,3-count_correct)~1+log(trial)*relevel(as.factor(task), ref="speech_single")+(1+log(trial)|participant),
+                                      data=dat_dual_speech_n192_nophonrep, family = binomial(link = "logit"), 
+                                      control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=20e5)))
+summary(m_fig7_log_glmer_final_single)
+
+m_fig7_log_glmer_final_visual<-glmer(cbind(count_correct,3-count_correct)~1+log(trial)*relevel(as.factor(task), ref="visual")+(1+log(trial)|participant),
+                                     data=dat_dual_speech_n192_nophonrep, family = binomial(link = "logit"), 
+                                     control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=20e5)))
+summary(m_fig7_log_glmer_final_visual)
+
 
 ### plot
 
-m_fig7_final_reorder<-c('visual','phonological','lexical') # reorder the levels for plotting
+m_fig7_final_reorder<-c('speech_single','visual','phonological','lexical') # reorder the levels for plotting
 
-facet_labels<-c(lexical = "Dual Lexical",phonological = 'Dual Phonological', visual = 'Dual Visual') # Set the label for panels in the plot
+facet_labels<-c(lexical = "Dual Lexical", phonological = "Dual Phonological",speech_single = 'Single', visual = 'Dual Visual') # Set the label for panels in the plot
 
-dat_dual_n192_nophonrep_secondary_acc_reorder <- dat_dual_n192_nophonrep_secondary_acc %>% 
+dat_dual_speech_n192_nophonrep_se_reorder <- dat_dual_speech_n192_nophonrep_se %>% 
   mutate(task = fct_relevel(task, m_fig7_final_reorder)) # reorder the raw data per level of task
 
 m_fig7_final_prediction_reorder<-gg_m_fig7_log_glmer_final %>% 
   mutate(task = fct_relevel(task, m_fig7_final_reorder)) # reorder the prediction per level of task
 
-plot_m_fig7_final<-ggplot(dat_dual_n192_nophonrep_secondary_acc_reorder,aes(x=trial, y=correctness,color=task, shape=task)) + 
-  geom_errorbar(aes(ymin=correctness-se, ymax=correctness+se), width=.1) +
+plot_m_fig7_final<-ggplot(dat_dual_speech_n192_nophonrep_se_reorder,aes(x=trial, y=word_percent,color=task, shape=task)) + 
+  geom_errorbar(aes(ymin=word_percent-se, ymax=word_percent+se), width=.1) +
   geom_point() +
-  geom_line(data=m_fig7_final_prediction_reorder, aes(x=x, y=predicted,color=task), size=.6) +
-  geom_ribbon(data=m_fig7_final_prediction_reorder, aes(ymin=conf.low, ymax=conf.high, x=x, y=predicted,fill=task,color=task), alpha = 0.2) +# error band
-  scale_y_continuous(breaks = seq(0.4, 1, by = 0.1),limits=c(0.4, 1))+
-  labs(x="Trial number", y = "Accuracy")+
+  geom_line(data=m_fig7_final_prediction_reorder, aes(x=x, y=predicted*100,color=task), size=.6) +
+  geom_ribbon(data=m_fig7_final_prediction_reorder, aes(ymin=conf.low*100, ymax=conf.high*100, x=x, y=predicted*100,fill=task,color=task), alpha = 0.2) +# error band
+  scale_y_continuous(breaks = seq(0, 100, by = 10),limits=c(0, 100))+
+  labs(x="Trial number", y = "%Correct")+
   theme_minimal()+
   facet_wrap(~task,
              labeller = labeller(task = facet_labels)) # main figure
@@ -504,127 +511,67 @@ plot_m_fig7_final+
         legend.position = "none") # update the formatting for the plot
 
 
-# Figure c1: GLMM-estimated visual task RTs in millisecond at different task difficulty in Experiment 1
+# Figure 8: Trial-wise accuracy in secondary tasks (Experiment 2)
 
-## Model:
+## Model (also see comments on Figure 3 for how the code is structured):
 
-### full:
+### glmer_full
 
-m_figc1_glmer_full<-glmer(rt~1+log(trial)*task+(1+log(trial)|participant)+(1+task|prompt),
-                              data=dat_dual_n192_sndcorrect, family = Gamma(link = "log"), 
+m_fig8_log_glmer_full<-glmer(correctness~1+log(trial)*task+(1+log(trial)|participant)+(1+task|prompt),
+                             data=dat_dual_n192_nophonrep, family = binomial(link = "logit"), 
+                             control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
+summary(m_fig8_log_glmer_full)
+
+### glmer_final (best fitting model)
+
+m_fig8_log_glmer_final<-glmer(correctness~1+log(trial)*task+(1+log(trial)|participant),
+                              data=dat_dual_n192_nophonrep, family = binomial(link = "logit"), 
                               control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
-
-summary(m_figc1_glmer_full)
-
-### glmer_1 (best fitting model)
-
-m_figc1_glmer_1<-glmer(rt~1+log(trial)*task+(1|participant)+(1|prompt),
-                       data=dat_dual_n192_sndcorrect, family = Gamma(link = "log"), 
-                       control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
-
-summary(m_figc1_glmer_1)
-
-gg_m_figc1_glmer_1<-ggpredict(m_figc1_glmer_1, terms = c("trial[all]","task")) # save the prediction from the model using ggpredict()
-plot(gg_m_figc1_glmer_1) # plot the model
-
-gg_m_figc1_glmer_1$task<-gg_m_figc1_glmer_1$group
+summary(m_fig8_log_glmer_final)
 
 
-### plot
+gg_m_fig8_log_glmer_final<-ggpredict(m_fig8_log_glmer_final, terms = c("trial[all]","task")) # save the prediction from the model using ggpredict()
+plot(gg_m_fig8_log_glmer_final) # plot the model
 
-m_figc1_final_reorder<-c('speech_td_48_60','speech_td_24_36','speech_td_0_12')
-
-facet_labels<-c(speech_td_0_12 = "Dual Hard",speech_td_24_36 = 'Dual Intermediate', speech_td_48_60 = 'Dual Easy')
-
-dat_dual_n192_sndcorrect_rt_se_reorder <- dat_dual_n192_sndcorrect_rt_se %>% 
-  mutate(task = fct_relevel(task, m_figc1_final_reorder))
-
-m_figc1_final_prediction_reorder<-gg_m_figc1_glmer_1 %>% 
-  mutate(task = fct_relevel(task, m_figc1_final_reorder))
-
-
-plot_m_figc1_final<-ggplot(dat_dual_n192_sndcorrect_rt_se_reorder, aes(x=trial, y=rt,color=task, shape=task)) + 
-  geom_errorbar(aes(ymin=rt-se, ymax=rt+se), width=.1) +
-  geom_point() +
-  geom_line(data=m_figc1_final_prediction_reorder, aes(x=x, y=predicted,color=task), size=.6) +
-  geom_ribbon(data=m_figc1_final_prediction_reorder, aes(ymin=conf.low, ymax=conf.high, x=x, y=predicted,fill=task,color=task), alpha = 0.2) +# error band
-  scale_y_continuous(breaks = seq(300, 1400, by = 200),limits=c(300, 1400))+
-  labs(x="Trial number", y = "RT (ms)")+
-  theme_minimal()+
-  facet_wrap(~task,
-             labeller = labeller(task = facet_labels))
-
-plot_m_figc1_final+
-  theme(plot.title = element_text(size = 13,hjust=0.5), 
-        axis.text.x = element_text(size=11.5,angle = 0, hjust = 0.5),
-        axis.title.x = element_text(size=12),
-        axis.title.y = element_text(size=12),
-        strip.text.x = element_text(size = 11),
-        legend.title = element_text(size=12),
-        legend.text = element_text(size=11),
-        legend.position = "none")
+gg_m_fig8_log_glmer_final$task<-gg_m_fig8_log_glmer_final$group
 
 
 
-m_figc1_glmer_1_relvl2436<-glmer(rt~1+log(trial)*relevel(as.factor(task), ref="speech_td_24_36")+(1|participant)+(1|prompt),
-                       data=dat_dual_n192_sndcorrect, family = Gamma(link = "log"), 
-                       control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
+m_fig8_log_glmer_final_phon<-glmer(correctness~1+log(trial)*relevel(as.factor(task), ref="phonological")+(1+log(trial)|participant),
+                              data=dat_dual_n192_nophonrep, family = binomial(link = "logit"), 
+                              control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
+summary(m_fig8_log_glmer_final_phon)
 
-summary(m_figc1_glmer_1_relvl2436)
-
-
-# Figure c2: Trial-wise RTs in secondary tasks (Experiment 2)
-
-## Model (also see comments for Figure 3 for what the code means below):
-
-### full:
-
-m_figc2_glmer_full<-glmer(rt~1+log(trial)*task+(1+log(trial)|participant)+(1+task|prompt),
-                          data=dat_dual_n192_nophonrep_sndcorrect, family = Gamma(link = "log"), 
-                          control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
-
-summary(m_figc2_glmer_full)
-
-
-### glmer_3 (best fitting model)
-
-m_figc2_glmer_3<-glmer(rt~1+log(trial)*task+(1+task|prompt),
-                       data=dat_dual_n192_nophonrep_sndcorrect, family = Gamma(link = "log"), 
-                       control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
-
-summary(m_figc2_glmer_3)
-
-gg_m_figc2_glmer_3<-ggpredict(m_figc2_glmer_3, terms = c("trial[all]","task")) # save the prediction from the model using ggpredict()
-plot(gg_m_figc2_glmer_3) # plot the model
-
-gg_m_figc2_glmer_3$task<-gg_m_figc2_glmer_3$group
-
+m_fig8_log_glmer_final_vis<-glmer(correctness~1+log(trial)*relevel(as.factor(task), ref="visual")+(1+log(trial)|participant),
+                                   data=dat_dual_n192_nophonrep, family = binomial(link = "logit"), 
+                                   control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
+summary(m_fig8_log_glmer_final_vis)
 
 ### plot
 
-m_figc2_final_reorder<-c('visual','phonological','lexical') # reorder the levels for plotting
+m_fig8_final_reorder<-c('visual','phonological','lexical') # reorder the levels for plotting
 
 facet_labels<-c(lexical = "Dual Lexical",phonological = 'Dual Phonological', visual = 'Dual Visual') # Set the label for panels in the plot
 
-dat_dual_n192_nophonrep_sndcorrect_se_reorder <- dat_dual_n192_nophonrep_sndcorrect_se %>% 
-  mutate(task = fct_relevel(task, m_figc2_final_reorder)) # reorder the raw data per level of task
+dat_dual_n192_nophonrep_secondary_acc_reorder <- dat_dual_n192_nophonrep_secondary_acc %>% 
+  mutate(task = fct_relevel(task, m_fig8_final_reorder)) # reorder the raw data per level of task
 
-m_figc2_final_prediction_reorder<-gg_m_figc2_glmer_3 %>% 
-  mutate(task = fct_relevel(task, m_figc2_final_reorder)) # reorder the prediction per level of task
+m_fig8_final_prediction_reorder<-gg_m_fig8_log_glmer_final %>% 
+  mutate(task = fct_relevel(task, m_fig8_final_reorder)) # reorder the prediction per level of task
 
-plot_m_figc2_final<-ggplot(dat_dual_n192_nophonrep_sndcorrect_se_reorder,aes(x=trial, y=rt,color=task, shape=task)) + 
-  geom_errorbar(aes(ymin=rt-se, ymax=rt+se), width=.1) +
+plot_m_fig8_final<-ggplot(dat_dual_n192_nophonrep_secondary_acc_reorder,aes(x=trial, y=correctness*100,color=task, shape=task)) + 
+  geom_errorbar(aes(ymin=(correctness-se)*100, ymax=(correctness+se)*100), width=.1) +
   geom_point() +
-  geom_line(data=m_figc2_final_prediction_reorder, aes(x=x, y=predicted,color=task), size=.6) +
-  geom_ribbon(data=m_figc2_final_prediction_reorder, aes(ymin=conf.low, ymax=conf.high, x=x, y=predicted,fill=task,color=task), alpha = 0.2) +# error band
-  scale_y_continuous(breaks = seq(400, 1500, by = 200),limits=c(400, 1500))+
-  labs(x="Trial number", y = "RT (ms)")+
+  geom_line(data=m_fig8_final_prediction_reorder, aes(x=x, y=predicted*100,color=task), size=.6) +
+  geom_ribbon(data=m_fig8_final_prediction_reorder, aes(ymin=conf.low*100, ymax=conf.high*100, x=x, y=predicted*100,fill=task,color=task), alpha = 0.2) +# error band
+  scale_y_continuous(breaks = seq(40, 100, by = 10),limits=c(40, 100))+
+  labs(x="Trial number", y = "%Correct")+
   theme_minimal()+
   facet_wrap(~task,
              labeller = labeller(task = facet_labels)) # main figure
 
 
-plot_m_figc2_final+
+plot_m_fig8_final+
   theme(plot.title = element_text(size = 13,hjust=0.5), 
         axis.text.x = element_text(size=11.5,angle = 0, hjust = 0.5),
         axis.title.x = element_text(size=12),
@@ -635,7 +582,70 @@ plot_m_figc2_final+
         legend.position = "none") # update the formatting for the plot
 
 
-# Figure c3: Overall performance in the single speech task (current vs pilot experiments)
+
+# Figure 9: Trial-wise RTs in secondary tasks (Experiment 2)
+
+## Model (also see comments for Figure 3 for what the code means below):
+
+### full:
+
+m_fig9_glmer_full<-glmer(rt~1+log(trial)*task+(1+log(trial)|participant)+(1+task|prompt),
+                          data=dat_dual_n192_nophonrep_sndcorrect, family = Gamma(link = "log"), 
+                          control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
+
+summary(m_fig9_glmer_full)
+
+
+### glmer_3 (best fitting model)
+
+m_fig9_glmer_3<-glmer(rt~1+log(trial)*task+(1+task|prompt),
+                       data=dat_dual_n192_nophonrep_sndcorrect, family = Gamma(link = "log"), 
+                       control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
+
+summary(m_fig9_glmer_3)
+
+gg_m_fig9_glmer_3<-ggpredict(m_fig9_glmer_3, terms = c("trial[all]","task")) # save the prediction from the model using ggpredict()
+plot(gg_m_fig9_glmer_3) # plot the model
+
+gg_m_fig9_glmer_3$task<-gg_m_fig9_glmer_3$group
+
+
+### plot
+
+m_fig9_final_reorder<-c('visual','phonological','lexical') # reorder the levels for plotting
+
+facet_labels<-c(lexical = "Dual Lexical",phonological = 'Dual Phonological', visual = 'Dual Visual') # Set the label for panels in the plot
+
+dat_dual_n192_nophonrep_sndcorrect_se_reorder <- dat_dual_n192_nophonrep_sndcorrect_se %>% 
+  mutate(task = fct_relevel(task, m_fig9_final_reorder)) # reorder the raw data per level of task
+
+m_fig9_final_prediction_reorder<-gg_m_fig9_glmer_3 %>% 
+  mutate(task = fct_relevel(task, m_fig9_final_reorder)) # reorder the prediction per level of task
+
+plot_m_fig9_final<-ggplot(dat_dual_n192_nophonrep_sndcorrect_se_reorder,aes(x=trial, y=rt,color=task, shape=task)) + 
+  geom_errorbar(aes(ymin=rt-se, ymax=rt+se), width=.1) +
+  geom_point() +
+  geom_line(data=m_fig9_final_prediction_reorder, aes(x=x, y=predicted,color=task), size=.6) +
+  geom_ribbon(data=m_fig9_final_prediction_reorder, aes(ymin=conf.low, ymax=conf.high, x=x, y=predicted,fill=task,color=task), alpha = 0.2) +# error band
+  scale_y_continuous(breaks = seq(400, 1500, by = 200),limits=c(400, 1500))+
+  labs(x="Trial number", y = "RT (ms)")+
+  theme_minimal()+
+  facet_wrap(~task,
+             labeller = labeller(task = facet_labels)) # main figure
+
+
+plot_m_fig9_final+
+  theme(plot.title = element_text(size = 13,hjust=0.5), 
+        axis.text.x = element_text(size=11.5,angle = 0, hjust = 0.5),
+        axis.title.x = element_text(size=12),
+        axis.title.y = element_text(size=12),
+        strip.text.x = element_text(size = 11),
+        legend.title = element_text(size=12),
+        legend.text = element_text(size=11),
+        legend.position = "none") # update the formatting for the plot
+
+
+# Figure C1: Overall performance in the single speech task (current vs pilot experiments)
 
 
 ## Figure:
@@ -666,58 +676,58 @@ plot_single_40t_60t_n78+
 
 ## Model:
 
-m_figc3_full<-glmer(cbind(count_correct,3-count_correct)~1+task+(1|participant)+(1+task|sentence),
+m_figc1_full<-glmer(cbind(count_correct,3-count_correct)~1+task+(1|participant)+(1+task|sentence),
                     data=dat_single_40t_60t_n78, family = binomial(link = "logit"), 
                     control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=10e6)))
-summary(m_figc3_full)
+summary(m_figc1_full)
 
 
-m_figc3_final<-glmer(cbind(count_correct,3-count_correct)~1+task+(1|participant),
+m_figc1_final<-glmer(cbind(count_correct,3-count_correct)~1+task+(1|participant),
                      data=dat_single_40t_60t_n78, family = binomial(link = "logit"), 
                      control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=10e6)))
-summary(m_figc3_final)
+summary(m_figc1_final)
 
 
-# Figure c4: Trial-wise % correct in speech tasks (phonological and phonological replication)
+# Figure C2: Trial-wise % correct in speech tasks (phonological and phonological replication)
 
 ## Model (also see the comments for Figure 3 for what the code means below):
 
 ### full
 
-m_figc4_log_glmer_full<-glmer(cbind(count_correct,3-count_correct)~1+log(trial)*task+(1+log(trial)|participant)+(1+task|sentence),
+m_figc2_log_glmer_full<-glmer(cbind(count_correct,3-count_correct)~1+log(trial)*task+(1+log(trial)|participant)+(1+task|sentence),
                               data=dat_dual_speech_n96_onlyphonrep, family = binomial(link = "logit"), 
                               control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=20e5)))
-summary(m_figc4_log_glmer_full)
+summary(m_figc2_log_glmer_full)
 
 ### glmer_1 (best fitting model)
 
-m_figc4_log_glmer_1<-glmer(cbind(count_correct,3-count_correct)~1+log(trial)*task+(1+log(trial)|participant),
+m_figc2_log_glmer_1<-glmer(cbind(count_correct,3-count_correct)~1+log(trial)*task+(1+log(trial)|participant),
                            data=dat_dual_speech_n96_onlyphonrep, family = binomial(link = "logit"), 
                            control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=20e5)))
-summary(m_figc4_log_glmer_1)
+summary(m_figc2_log_glmer_1)
 
-gg_m_figc4_log_glmer_1<-ggpredict(m_figc4_log_glmer_1, terms = c("trial[all]","task")) # save the prediction from the model using ggpredict()
-plot(gg_m_figc4_log_glmer_1) # plot the model
+gg_m_figc2_log_glmer_1<-ggpredict(m_figc2_log_glmer_1, terms = c("trial[all]","task")) # save the prediction from the model using ggpredict()
+plot(gg_m_figc2_log_glmer_1) # plot the model
 
-gg_m_figc4_log_glmer_1$task<-gg_m_figc4_log_glmer_1$group
+gg_m_figc2_log_glmer_1$task<-gg_m_figc2_log_glmer_1$group
 
 ### plot
 
-m_figc4_final_reorder<-c('phonological','phon_replication') # reorder the levels for plotting
+m_figc2_final_reorder<-c('phonological','phon_replication') # reorder the levels for plotting
 
 facet_labels<-c(phon_replication = "Phonological Replication", phonological = "Phonological") # Set the label for panels in the plot
 
 dat_dual_speech_n96_onlyphonrep_se_reorder <- dat_dual_speech_n96_onlyphonrep_se %>% 
-  mutate(task = fct_relevel(task, m_figc4_final_reorder)) # reorder the raw data per level of task
+  mutate(task = fct_relevel(task, m_figc2_final_reorder)) # reorder the raw data per level of task
 
-m_figc4_final_prediction_reorder<-gg_m_figc4_log_glmer_1 %>% 
-  mutate(task = fct_relevel(task, m_figc4_final_reorder)) # reorder the prediction per level of task
+m_figc2_final_prediction_reorder<-gg_m_figc2_log_glmer_1 %>% 
+  mutate(task = fct_relevel(task, m_figc2_final_reorder)) # reorder the prediction per level of task
 
-plot_m_figc4_final<-ggplot(dat_dual_speech_n96_onlyphonrep_se_reorder,aes(x=trial, y=word_percent,color=task, shape=task)) + 
+plot_m_figc2_final<-ggplot(dat_dual_speech_n96_onlyphonrep_se_reorder,aes(x=trial, y=word_percent,color=task, shape=task)) + 
   geom_errorbar(aes(ymin=word_percent-se, ymax=word_percent+se), width=.1) +
   geom_point() +
-  geom_line(data=m_figc4_final_prediction_reorder, aes(x=x, y=predicted*100,color=task), size=.6) +
-  geom_ribbon(data=m_figc4_final_prediction_reorder, aes(ymin=conf.low*100, ymax=conf.high*100, x=x, y=predicted*100,fill=task,color=task), alpha = 0.2) +# error band
+  geom_line(data=m_figc2_final_prediction_reorder, aes(x=x, y=predicted*100,color=task), size=.6) +
+  geom_ribbon(data=m_figc2_final_prediction_reorder, aes(ymin=conf.low*100, ymax=conf.high*100, x=x, y=predicted*100,fill=task,color=task), alpha = 0.2) +# error band
   scale_y_continuous(breaks = seq(40, 100, by = 10),limits=c(40, 100))+
   labs(x="Trial number", y = "%Correct")+
   theme_minimal()+
@@ -725,7 +735,7 @@ plot_m_figc4_final<-ggplot(dat_dual_speech_n96_onlyphonrep_se_reorder,aes(x=tria
              labeller = labeller(task = facet_labels)) # main figure
 
 
-plot_m_figc4_final+
+plot_m_figc2_final+
   theme(plot.title = element_text(size = 13,hjust=0.5), 
         axis.text.x = element_text(size=11.5,angle = 0, hjust = 0.5),
         axis.title.x = element_text(size=12),
@@ -737,29 +747,29 @@ plot_m_figc4_final+
 
 
 
-# Figure c5: Trial-wise accuracy in secondary tasks (phonological and phonological replication)
+# Figure C3: Trial-wise accuracy in secondary tasks (phonological and phonological replication)
 
 ## Model (also see the comments for Figure 3 for what the code means below):
 
 ### full
 
-m_figc5_log_glmer_full<-glmer(correctness~1+log(trial)*task+(1+log(trial)|participant)+(1+task|prompt),
+m_figc3_log_glmer_full<-glmer(correctness~1+log(trial)*task+(1+log(trial)|participant)+(1+task|prompt),
                               data=dat_dual_speech_n96_onlyphonrep, family = binomial(link = "logit"), 
                               control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
-summary(m_figc5_log_glmer_full)
+summary(m_figc3_log_glmer_full)
 
 
-gg_m_figc5_log_glmer_full<-ggpredict(m_figc5_log_glmer_full, terms = c("trial[all]","task")) # save the prediction from the model using ggpredict()
-plot(gg_m_figc5_log_glmer_full) # plot the model
+gg_m_figc3_log_glmer_full<-ggpredict(m_figc3_log_glmer_full, terms = c("trial[all]","task")) # save the prediction from the model using ggpredict()
+plot(gg_m_figc3_log_glmer_full) # plot the model
 
-gg_m_figc5_log_glmer_full$task<-gg_m_figc5_log_glmer_full$group
+gg_m_figc3_log_glmer_full$task<-gg_m_figc3_log_glmer_full$group
 
 # Note the main function ggplot() and the geom_line() read different datasets. This allows us to draw the raw data and the fitted values from the model on the same graph
 ggplot(dat_dual_n96_onlyphonrep_secondary_acc, aes(x=trial, y=correctness, color=task, shape = task)) + 
   geom_errorbar(aes(ymin=correctness-se, ymax=correctness+se), width=.1) +
   geom_point() +
-  geom_line(data=gg_m_figc5_log_glmer_full, aes(x=x, y=predicted, colour = task), size=.6) +
-  #geom_ribbon(data=gg_m_figc5_log_glmer_full, aes(ymin=conf.low, ymax=conf.high, x=x, y=predicted, color = task, fill=task), alpha = 0.2) +# error band
+  geom_line(data=gg_m_figc3_log_glmer_full, aes(x=x, y=predicted, colour = task), size=.6) +
+  #geom_ribbon(data=gg_m_figc3_log_glmer_full, aes(ymin=conf.low, ymax=conf.high, x=x, y=predicted, color = task, fill=task), alpha = 0.2) +# error band
   labs(x="Trial number", y = "%Correct")+
   facet_wrap(~ task) +
   theme_bw()
@@ -767,40 +777,40 @@ ggplot(dat_dual_n96_onlyphonrep_secondary_acc, aes(x=trial, y=correctness, color
 ### glmer_1 (best fitting model)
 
 
-m_figc5_log_glmer_1<-glmer(correctness~1+log(trial)*task+(1+log(trial)|participant),
+m_figc3_log_glmer_1<-glmer(correctness~1+log(trial)*task+(1+log(trial)|participant),
                            data=dat_dual_speech_n96_onlyphonrep, family = binomial(link = "logit"), 
                            control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
-summary(m_figc5_log_glmer_1)
+summary(m_figc3_log_glmer_1)
 
-m_figc5_log_glmer_1_phon<-glmer(correctness~1+log(trial)*relevel(as.factor(task), ref="phonological")+(1+log(trial)|participant),
+m_figc3_log_glmer_1_phon<-glmer(correctness~1+log(trial)*relevel(as.factor(task), ref="phonological")+(1+log(trial)|participant),
                            data=dat_dual_speech_n96_onlyphonrep, family = binomial(link = "logit"), 
                            control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
-summary(m_figc5_log_glmer_1_phon)
+summary(m_figc3_log_glmer_1_phon)
 
 
-gg_m_figc5_log_glmer_1<-ggpredict(m_figc5_log_glmer_1, terms = c("trial[all]","task")) # save the prediction from the model using ggpredict()
-plot(gg_m_figc5_log_glmer_1) # plot the model
+gg_m_figc3_log_glmer_1<-ggpredict(m_figc3_log_glmer_1, terms = c("trial[all]","task")) # save the prediction from the model using ggpredict()
+plot(gg_m_figc3_log_glmer_1) # plot the model
 
-gg_m_figc5_log_glmer_1$task<-gg_m_figc5_log_glmer_1$group
+gg_m_figc3_log_glmer_1$task<-gg_m_figc3_log_glmer_1$group
 
 
 ### plot
 
-m_figc5_final_reorder<-c('phonological','phon_replication') # reorder the levels for plotting
+m_figc3_final_reorder<-c('phonological','phon_replication') # reorder the levels for plotting
 
 facet_labels<-c(phon_replication = "Phonological Replication", phonological = "Phonological") # Set the label for panels in the plot
 
 dat_dual_n96_onlyphonrep_secondary_acc_reorder <- dat_dual_n96_onlyphonrep_secondary_acc %>% 
-  mutate(task = fct_relevel(task, m_figc5_final_reorder)) # reorder the raw data per level of task
+  mutate(task = fct_relevel(task, m_figc3_final_reorder)) # reorder the raw data per level of task
 
-m_figc5_final_prediction_reorder<-gg_m_figc5_log_glmer_1 %>% 
-  mutate(task = fct_relevel(task, m_figc5_final_reorder)) # reorder the prediction per level of task
+m_figc3_final_prediction_reorder<-gg_m_figc3_log_glmer_1 %>% 
+  mutate(task = fct_relevel(task, m_figc3_final_reorder)) # reorder the prediction per level of task
 
-plot_m_figc5_final<-ggplot(dat_dual_n96_onlyphonrep_secondary_acc_reorder,aes(x=trial, y=correctness,color=task, shape=task)) + 
+plot_m_figc3_final<-ggplot(dat_dual_n96_onlyphonrep_secondary_acc_reorder,aes(x=trial, y=correctness,color=task, shape=task)) + 
   geom_errorbar(aes(ymin=correctness-se, ymax=correctness+se), width=.1) +
   geom_point() +
-  geom_line(data=m_figc5_final_prediction_reorder, aes(x=x, y=predicted,color=task), size=.6) +
-  geom_ribbon(data=m_figc5_final_prediction_reorder, aes(ymin=conf.low, ymax=conf.high, x=x, y=predicted,fill=task,color=task), alpha = 0.2) +# error band
+  geom_line(data=m_figc3_final_prediction_reorder, aes(x=x, y=predicted,color=task), size=.6) +
+  geom_ribbon(data=m_figc3_final_prediction_reorder, aes(ymin=conf.low, ymax=conf.high, x=x, y=predicted,fill=task,color=task), alpha = 0.2) +# error band
   scale_y_continuous(breaks = seq(0.5, 1, by = 0.1),limits=c(0.5, 1))+
   labs(x="Trial number", y = "Accuracy")+
   theme_minimal()+
@@ -808,7 +818,7 @@ plot_m_figc5_final<-ggplot(dat_dual_n96_onlyphonrep_secondary_acc_reorder,aes(x=
              labeller = labeller(task = facet_labels)) # main figure
 
 
-plot_m_figc5_final+
+plot_m_figc3_final+
   theme(plot.title = element_text(size = 13,hjust=0.5), 
         axis.text.x = element_text(size=11.5,angle = 0, hjust = 0.5),
         axis.title.x = element_text(size=12),
@@ -819,7 +829,7 @@ plot_m_figc5_final+
         legend.position = "none") # update the formatting for the plot
 
 
-# Figure c6: Effort and attention questionnaire (Experiment 1)
+# Figure C4: Effort and attention questionnaire (Experiment 1)
 
 ## Figure: 
 
@@ -880,9 +890,9 @@ summary(ques_speechvisual_visualattention_m_lm_nooutlier) # Model output can be 
 
 
 
-# Figure c7: Effort and attention questionnaire (Experiment 2)
+# Figure C5: Effort and attention questionnaire (Experiment 2)
 
-## Figure (see also the comments for Figure c6 for what the code means below):
+## Figure (see also the comments for Figure C4 for what the code means below):
 
 dat_exp2_question_n192_long_sdfiltered$measure <- factor(dat_exp2_question_n192_long_sdfiltered$measure, levels = c("effort","attention"))
 dat_exp2_question_n192_long_sdfiltered$task <- factor(dat_exp2_question_n192_long_sdfiltered$task, levels = c("speech","secondary"))
@@ -945,7 +955,7 @@ ques_speechtsecondary_tsecondaryattention_m_lm_nophonrep_nooutlier<-lm(attention
 summary(ques_speechtsecondary_tsecondaryattention_m_lm_nophonrep_nooutlier) # Model output can be found in Table B6
 
 
-# Additional analysis on random slopes:
+# Figure C6: correlations between individual slopes of the speech and secondary task conditions
 
 ## data curation
 
@@ -1054,7 +1064,7 @@ for (exp in exps) {
     } 
 }
 
-## Figure C8: correlations between individual slopes of the speech and secondary task conditions
+## Plot
 
 spe_vise<-ggplot(data = coefs, aes(x=logtrial_exp1_sp_speech_td_48_60, y=logtrial_exp1_2nd_speech_td_48_60)) + 
   geom_point()+
@@ -1063,10 +1073,10 @@ spe_vise<-ggplot(data = coefs, aes(x=logtrial_exp1_sp_speech_td_48_60, y=logtria
   labs(x="Speech task under easy visual task (Exp 1)", y = "Easy visual task (Exp 1)")+
   theme_bw()
 
-spe_vise_formatted<-spe_vise+theme(axis.title.x = element_text(size=12,angle = 0, hjust = 0.5),
-                                   axis.title.y = element_text(size=12,angle = 90, hjust = 0.5),
-                                   axis.text.x = element_text(size=10,angle = 0, hjust = 0.5),
-                                   axis.text.y = element_text(size=10,angle = 0, hjust = 0.5),
+spe_vise_formatted<-spe_vise+theme(axis.title.x = element_text(size=14,angle = 0, hjust = 0.5),
+                                   axis.title.y = element_text(size=14,angle = 90, hjust = 0.5),
+                                   axis.text.x = element_text(size=12,angle = 0, hjust = 0.5),
+                                   axis.text.y = element_text(size=12,angle = 0, hjust = 0.5),
                                    panel.grid.major.x = element_line(color = "grey90"),
                                    panel.grid.minor.x = element_line(color = "grey90"))
 
@@ -1077,10 +1087,10 @@ spi_visi<-ggplot(data = coefs, aes(x=logtrial_exp1_sp_speech_td_24_36, y=logtria
   labs(x="Speech task under intermediate visual task (Exp 1)", y = "Intermediate visual task (Exp 1)")+
   theme_bw()
 
-spi_visi_formatted<-spi_visi+theme(axis.title.x = element_text(size=12,angle = 0, hjust = 0.5),
-                                   axis.title.y = element_text(size=12,angle = 90, hjust = 0.5),
-                                   axis.text.x = element_text(size=10,angle = 0, hjust = 0.5),
-                                   axis.text.y = element_text(size=10,angle = 0, hjust = 0.5),
+spi_visi_formatted<-spi_visi+theme(axis.title.x = element_text(size=14,angle = 0, hjust = 0.5),
+                                   axis.title.y = element_text(size=14,angle = 90, hjust = 0.5),
+                                   axis.text.x = element_text(size=12,angle = 0, hjust = 0.5),
+                                   axis.text.y = element_text(size=12,angle = 0, hjust = 0.5),
                                    panel.grid.major.x = element_line(color = "grey90"),
                                    panel.grid.minor.x = element_line(color = "grey90"))
 
@@ -1092,10 +1102,10 @@ sph_vish<-ggplot(data = coefs, aes(x=logtrial_exp1_sp_speech_td_0_12, y=logtrial
   labs(x="Speech task under hard visual task (Exp 1)", y = "Hard visual task (Exp 1)")+
   theme_bw()
 
-sph_vish_formatted<-sph_vish+theme(axis.title.x = element_text(size=12,angle = 0, hjust = 0.5),
-                                   axis.title.y = element_text(size=12,angle = 90, hjust = 0.5),
-                                   axis.text.x = element_text(size=10,angle = 0, hjust = 0.5),
-                                   axis.text.y = element_text(size=10,angle = 0, hjust = 0.5),
+sph_vish_formatted<-sph_vish+theme(axis.title.x = element_text(size=14,angle = 0, hjust = 0.5),
+                                   axis.title.y = element_text(size=14,angle = 90, hjust = 0.5),
+                                   axis.text.x = element_text(size=12,angle = 0, hjust = 0.5),
+                                   axis.text.y = element_text(size=12,angle = 0, hjust = 0.5),
                                    panel.grid.major.x = element_line(color = "grey90"),
                                    panel.grid.minor.x = element_line(color = "grey90"))
 
@@ -1107,10 +1117,10 @@ sp_vis<-ggplot(data = coefs, aes(x=logtrial_exp2_sp_visual, y=logtrial_exp2_2nd_
   labs(x="Speech task under visual task (Exp 2)", y = "Visual task (Exp 2)")+
   theme_bw()
 
-sp_vis_formatted<-sp_vis+theme(axis.title.x = element_text(size=12,angle = 0, hjust = 0.5),
-                               axis.title.y = element_text(size=12,angle = 90, hjust = 0.5),
-                               axis.text.x = element_text(size=10,angle = 0, hjust = 0.5),
-                               axis.text.y = element_text(size=10,angle = 0, hjust = 0.5),
+sp_vis_formatted<-sp_vis+theme(axis.title.x = element_text(size=14,angle = 0, hjust = 0.5),
+                               axis.title.y = element_text(size=14,angle = 90, hjust = 0.5),
+                               axis.text.x = element_text(size=12,angle = 0, hjust = 0.5),
+                               axis.text.y = element_text(size=12,angle = 0, hjust = 0.5),
                                panel.grid.major.x = element_line(color = "grey90"),
                                panel.grid.minor.x = element_line(color = "grey90"))
 
@@ -1122,12 +1132,12 @@ sp_phon<-ggplot(data = coefs, aes(x=logtrial_exp2_sp_phonological, y=logtrial_ex
   labs(x="Speech task under phonological task (Exp 2)", y = "Phonological task (Exp 2)")+
   theme_bw()
 
-sp_phon_formatted<-sp_phon+theme(axis.title.x = element_text(size=12,angle = 0, hjust = 0.5),
-                               axis.title.y = element_text(size=12,angle = 90, hjust = 0.5),
-                               axis.text.x = element_text(size=10,angle = 0, hjust = 0.5),
-                               axis.text.y = element_text(size=10,angle = 0, hjust = 0.5),
-                               panel.grid.major.x = element_line(color = "grey90"),
-                               panel.grid.minor.x = element_line(color = "grey90"))
+sp_phon_formatted<-sp_phon+theme(axis.title.x = element_text(size=14,angle = 0, hjust = 0.5),
+                                 axis.title.y = element_text(size=14,angle = 90, hjust = 0.5),
+                                 axis.text.x = element_text(size=12,angle = 0, hjust = 0.5),
+                                 axis.text.y = element_text(size=12,angle = 0, hjust = 0.5),
+                                 panel.grid.major.x = element_line(color = "grey90"),
+                                 panel.grid.minor.x = element_line(color = "grey90"))
 
 
 
@@ -1138,10 +1148,10 @@ sp_lex<-ggplot(data = coefs, aes(x=logtrial_exp2_sp_lexical, y=logtrial_exp2_2nd
   labs(x="Speech task under lexical task (Exp 2)", y = "Lexical task (Exp 2)")+
   theme_bw()
 
-sp_lex_formatted<-sp_lex+theme(axis.title.x = element_text(size=12,angle = 0, hjust = 0.5),
-                                 axis.title.y = element_text(size=12,angle = 90, hjust = 0.5),
-                                 axis.text.x = element_text(size=10,angle = 0, hjust = 0.5),
-                                 axis.text.y = element_text(size=10,angle = 0, hjust = 0.5),
+sp_lex_formatted<-sp_lex+theme(axis.title.x = element_text(size=14,angle = 0, hjust = 0.5),
+                                 axis.title.y = element_text(size=14,angle = 90, hjust = 0.5),
+                                 axis.text.x = element_text(size=12,angle = 0, hjust = 0.5),
+                                 axis.text.y = element_text(size=12,angle = 0, hjust = 0.5),
                                  panel.grid.major.x = element_line(color = "grey90"),
                                  panel.grid.minor.x = element_line(color = "grey90"))
 
@@ -1152,7 +1162,6 @@ task_all <- ggarrange(spe_vise_formatted, spi_visi_formatted,sph_vish_formatted,
 
 annotate_figure(task_all,
                 bottom = text_grob("Beta estimate (Speech task)",
-                                   hjust = 0.5, size = 13),
-                left = text_grob("Beta estimate (Secondary task)", rot = 90,size = 13)
+                                   hjust = 0.5, size = 15),
+                left = text_grob("Beta estimate (Secondary task)", rot = 90,size = 15)
 )
-
