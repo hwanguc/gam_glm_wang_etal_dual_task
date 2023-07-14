@@ -1,5 +1,6 @@
 # Copyright: Han Wang, June 8th 2022.
 
+# Edited on July 3rd 2023 (added analysis on fixed-effect model fit comparisons)
 # Edited on June 15th 2023 (updated the figure numbers)
 # Edited on May 22nd 2023 (Added an analysis on the relationship between the slopes of the two tasks)
 # Edited on January 24th 2023 (updated comments and fixed typos)
@@ -29,6 +30,8 @@ library(mgcv)
 library(mgcViz)
 library(itsadug)
 
+library(rcompanion)
+
 `%notin%` <- Negate(`%in%`)
 
 remove_outliers <- function(x, na.rm = TRUE, ...) {
@@ -36,6 +39,8 @@ remove_outliers <- function(x, na.rm = TRUE, ...) {
   y[abs(x-mean(x)) > 3*sd(x)] <- NA
   y
 }
+
+
 
 
 # Data cleaning
@@ -193,6 +198,56 @@ dat_exp2_question_n192_wide_4measures_sdfiltered_nophonrep<-dat_exp2_question_n1
 dat_exp2_question_n192_long_sdfiltered<-read.csv("dat_exp2_question_n192_long_sdfiltered.csv") #Note that under task.type, a=single speech, b = dual-visual, c = dual-phonological, d = dual-lexical. Here, we removed the responses larger than 3SDs of the group mean and removed the NA rows for visual responses in speech single condition.
 
 
+# Table B1: Exploratory analysis for fixed-effect model fit comparisons
+
+## Experiment 1:
+
+### Speech-task % correct model
+
+m_exp1_sp_lm <- glm(cbind(count_correct,3-count_correct) ~ trial * task, family = binomial, data = dat_dual_speech_n192)
+m_exp1_sp_log <- glm(cbind(count_correct,3-count_correct) ~ log(trial) * task, family = binomial, data = dat_dual_speech_n192)
+
+compareGLM(m_exp1_sp_lm,m_exp1_sp_log)
+
+### Visual-task correctness model
+
+m_exp1_vis_acc_lm <- glm(correctness ~ poly(trial,2) * task, family = binomial, data = dat_dual_n192)
+m_exp1_vis_acc_poly <- glm(correctness ~ poly(trial,1) * task, family = binomial, data = dat_dual_n192)
+
+compareGLM(m_exp1_vis_acc_lm, m_exp1_vis_acc_poly)
+
+### Visual-task RT model
+
+m_exp1_vis_rt_lm <- glm(rt ~ trial * task, family = Gamma(link = "log"), data = dat_dual_n192_sndcorrect)
+m_exp1_vis_rt_log <- glm(rt ~ log(trial) * task, family = Gamma(link = "log"), data = dat_dual_n192_sndcorrect)
+
+compareGLM(m_exp1_vis_rt_lm, m_exp1_vis_rt_log)
+
+## Experiment 2
+
+### Speech-task % correct model
+
+m_exp2_sp_lm <- glm(cbind(count_correct,3-count_correct) ~ trial * task, family = binomial, data = dat_dual_speech_n192_nophonrep)
+m_exp2_sp_log <- glm(cbind(count_correct,3-count_correct) ~ log(trial) * task, family = binomial, data = dat_dual_speech_n192_nophonrep)
+
+compareGLM(m_exp2_sp_lm,m_exp2_sp_log)
+
+
+### Secondary-task correctness model
+
+m_exp2_2nd_acc_lm <- glm(correctness ~ trial * task, family = binomial, data = dat_dual_n192_nophonrep)
+m_exp2_2nd_acc_log <- glm(correctness ~ log(trial) * task, family = binomial, data = dat_dual_n192_nophonrep)
+
+compareGLM(m_exp2_2nd_acc_lm, m_exp2_2nd_acc_log)
+
+### Secondary-task RT model
+
+m_exp2_2nd_rt_lm <- glm(rt ~ trial * task, family = Gamma(link = "log"), data = dat_dual_n192_nophonrep_sndcorrect)
+m_exp2_2nd_rt_log <- glm(rt ~ log(trial) * task, family = Gamma(link = "log"), data = dat_dual_n192_nophonrep_sndcorrect)
+
+compareGLM(m_exp2_2nd_rt_lm, m_exp2_2nd_rt_log)
+
+
 # Figure 3: Trial-wise % correct in speech tasks (Experiment 1)
 
 ## Model
@@ -215,8 +270,8 @@ m_fig3_log_glmer_final<-glmer(cbind(count_correct,3-count_correct)~1+log(trial)*
 summary(m_fig3_log_glmer_final)
 
 m_fig3_log_glmer_final_relvl012<-glmer(cbind(count_correct,3-count_correct)~1+log(trial)*relevel(as.factor(task), ref="speech_td_0_12")+(1+log(trial)|participant),
-                              data=dat_dual_speech_n192, family = binomial(link = "logit"), 
-                              control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=20e5)))
+                                       data=dat_dual_speech_n192, family = binomial(link = "logit"), 
+                                       control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=20e5)))
 summary(m_fig3_log_glmer_final_relvl012)
 
 
@@ -456,18 +511,18 @@ summary(m_fig7_log_glmer_final)
 
 
 m_fig7_log_glmer_final_phon<-glmer(cbind(count_correct,3-count_correct)~1+log(trial)*relevel(as.factor(task), ref="phonological")+(1+log(trial)|participant),
-                              data=dat_dual_speech_n192_nophonrep, family = binomial(link = "logit"), 
-                              control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=20e5)))
+                                   data=dat_dual_speech_n192_nophonrep, family = binomial(link = "logit"), 
+                                   control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=20e5)))
 summary(m_fig7_log_glmer_final_phon)
 
 m_fig7_log_glmer_final_lexical<-glmer(cbind(count_correct,3-count_correct)~1+log(trial)*relevel(as.factor(task), ref="lexical")+(1+log(trial)|participant),
-                                   data=dat_dual_speech_n192_nophonrep, family = binomial(link = "logit"), 
-                                   control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=20e5)))
+                                      data=dat_dual_speech_n192_nophonrep, family = binomial(link = "logit"), 
+                                      control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=20e5)))
 summary(m_fig7_log_glmer_final_lexical)
 
 m_fig7_log_glmer_final_single<-glmer(cbind(count_correct,3-count_correct)~1+log(trial)*relevel(as.factor(task), ref="speech_single")+(1+log(trial)|participant),
-                                      data=dat_dual_speech_n192_nophonrep, family = binomial(link = "logit"), 
-                                      control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=20e5)))
+                                     data=dat_dual_speech_n192_nophonrep, family = binomial(link = "logit"), 
+                                     control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=20e5)))
 summary(m_fig7_log_glmer_final_single)
 
 m_fig7_log_glmer_final_visual<-glmer(cbind(count_correct,3-count_correct)~1+log(trial)*relevel(as.factor(task), ref="visual")+(1+log(trial)|participant),
@@ -538,13 +593,13 @@ gg_m_fig8_log_glmer_final$task<-gg_m_fig8_log_glmer_final$group
 
 
 m_fig8_log_glmer_final_phon<-glmer(correctness~1+log(trial)*relevel(as.factor(task), ref="phonological")+(1+log(trial)|participant),
-                              data=dat_dual_n192_nophonrep, family = binomial(link = "logit"), 
-                              control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
+                                   data=dat_dual_n192_nophonrep, family = binomial(link = "logit"), 
+                                   control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
 summary(m_fig8_log_glmer_final_phon)
 
 m_fig8_log_glmer_final_vis<-glmer(correctness~1+log(trial)*relevel(as.factor(task), ref="visual")+(1+log(trial)|participant),
-                                   data=dat_dual_n192_nophonrep, family = binomial(link = "logit"), 
-                                   control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
+                                  data=dat_dual_n192_nophonrep, family = binomial(link = "logit"), 
+                                  control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
 summary(m_fig8_log_glmer_final_vis)
 
 ### plot
@@ -590,8 +645,8 @@ plot_m_fig8_final+
 ### full:
 
 m_fig9_glmer_full<-glmer(rt~1+log(trial)*task+(1+log(trial)|participant)+(1+task|prompt),
-                          data=dat_dual_n192_nophonrep_sndcorrect, family = Gamma(link = "log"), 
-                          control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
+                         data=dat_dual_n192_nophonrep_sndcorrect, family = Gamma(link = "log"), 
+                         control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
 
 summary(m_fig9_glmer_full)
 
@@ -599,8 +654,8 @@ summary(m_fig9_glmer_full)
 ### glmer_3 (best fitting model)
 
 m_fig9_glmer_3<-glmer(rt~1+log(trial)*task+(1+task|prompt),
-                       data=dat_dual_n192_nophonrep_sndcorrect, family = Gamma(link = "log"), 
-                       control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
+                      data=dat_dual_n192_nophonrep_sndcorrect, family = Gamma(link = "log"), 
+                      control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
 
 summary(m_fig9_glmer_3)
 
@@ -783,8 +838,8 @@ m_figc3_log_glmer_1<-glmer(correctness~1+log(trial)*task+(1+log(trial)|participa
 summary(m_figc3_log_glmer_1)
 
 m_figc3_log_glmer_1_phon<-glmer(correctness~1+log(trial)*relevel(as.factor(task), ref="phonological")+(1+log(trial)|participant),
-                           data=dat_dual_speech_n96_onlyphonrep, family = binomial(link = "logit"), 
-                           control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
+                                data=dat_dual_speech_n96_onlyphonrep, family = binomial(link = "logit"), 
+                                control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
 summary(m_figc3_log_glmer_1_phon)
 
 
@@ -1014,54 +1069,54 @@ conds<-c("speech_td_48_60","speech_td_24_36","speech_td_0_12","visual","phonolog
 i<-1
 
 for (exp in exps) {
+  
+  # dataset and conditions
+  if (exp == "exp1") {
+    current_dat<-dat_exp1_randslopes
+    conds_lst<-conds[1:3]
+  } else {
+    current_dat<-dat_exp2_randslopes
+    conds_lst<-conds[4:6]
+  }
+  
+  # extract the random slopes
+  
+  for (cond in conds_lst) {
     
-    # dataset and conditions
-    if (exp == "exp1") {
-      current_dat<-dat_exp1_randslopes
-      conds_lst<-conds[1:3]
-    } else {
-      current_dat<-dat_exp2_randslopes
-      conds_lst<-conds[4:6]
-    }
+    # fit a model
     
-    # extract the random slopes
+    current_m_sp<-glmer(cbind(count_correct,3-count_correct)~1+log(trial)*relevel(as.factor(task), ref=cond)+(1+log(trial)|participant),
+                        data=current_dat, family = binomial(link = "logit"), 
+                        control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
+    current_m_2nd<-glmer(correctness~1+log(trial)*relevel(as.factor(task), ref=cond)+(1+log(trial)|participant),
+                         data=current_dat, family = binomial(link = "logit"), 
+                         control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
     
-    for (cond in conds_lst) {
-      
-      # fit a model
-      
-      current_m_sp<-glmer(cbind(count_correct,3-count_correct)~1+log(trial)*relevel(as.factor(task), ref=cond)+(1+log(trial)|participant),
-                          data=current_dat, family = binomial(link = "logit"), 
-                          control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
-      current_m_2nd<-glmer(correctness~1+log(trial)*relevel(as.factor(task), ref=cond)+(1+log(trial)|participant),
-                           data=current_dat, family = binomial(link = "logit"), 
-                           control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=30e5)))
-      
-      current_m_sp_coef<-coef(current_m_sp)$participant
-      current_m_2nd_coef<-coef(current_m_2nd)$participant
-      
-      dat_currentcond_subj_lst<-current_dat %>%
-        filter(task == cond) %>%
-        pull(participant) %>%
-        as.character() %>%
-        unique()
-      
-      dat_curretcond_subj_idx<-is.element(row.names(current_m_sp_coef),dat_currentcond_subj_lst)
-      
-      m_sp_coef<-current_m_sp_coef[dat_curretcond_subj_idx,]
-      
-      names(coefs)[i]<-paste("logtrial",exp,tasks[1],cond,sep = "_")
-      coefs[i]<-m_sp_coef$`log(trial)`
-      i<-i+1
-      
-      
-      m_2nd_coef<-current_m_2nd_coef[dat_curretcond_subj_idx,]
-      
-      names(coefs)[i]<-paste("logtrial",exp,tasks[2],cond,sep = "_")
-      coefs[i]<-m_2nd_coef$`log(trial)`
-      i<-i+1
-      
-    } 
+    current_m_sp_coef<-coef(current_m_sp)$participant
+    current_m_2nd_coef<-coef(current_m_2nd)$participant
+    
+    dat_currentcond_subj_lst<-current_dat %>%
+      filter(task == cond) %>%
+      pull(participant) %>%
+      as.character() %>%
+      unique()
+    
+    dat_curretcond_subj_idx<-is.element(row.names(current_m_sp_coef),dat_currentcond_subj_lst)
+    
+    m_sp_coef<-current_m_sp_coef[dat_curretcond_subj_idx,]
+    
+    names(coefs)[i]<-paste("logtrial",exp,tasks[1],cond,sep = "_")
+    coefs[i]<-m_sp_coef$`log(trial)`
+    i<-i+1
+    
+    
+    m_2nd_coef<-current_m_2nd_coef[dat_curretcond_subj_idx,]
+    
+    names(coefs)[i]<-paste("logtrial",exp,tasks[2],cond,sep = "_")
+    coefs[i]<-m_2nd_coef$`log(trial)`
+    i<-i+1
+    
+  } 
 }
 
 ## Plot
@@ -1149,11 +1204,11 @@ sp_lex<-ggplot(data = coefs, aes(x=logtrial_exp2_sp_lexical, y=logtrial_exp2_2nd
   theme_bw()
 
 sp_lex_formatted<-sp_lex+theme(axis.title.x = element_text(size=14,angle = 0, hjust = 0.5),
-                                 axis.title.y = element_text(size=14,angle = 90, hjust = 0.5),
-                                 axis.text.x = element_text(size=12,angle = 0, hjust = 0.5),
-                                 axis.text.y = element_text(size=12,angle = 0, hjust = 0.5),
-                                 panel.grid.major.x = element_line(color = "grey90"),
-                                 panel.grid.minor.x = element_line(color = "grey90"))
+                               axis.title.y = element_text(size=14,angle = 90, hjust = 0.5),
+                               axis.text.x = element_text(size=12,angle = 0, hjust = 0.5),
+                               axis.text.y = element_text(size=12,angle = 0, hjust = 0.5),
+                               panel.grid.major.x = element_line(color = "grey90"),
+                               panel.grid.minor.x = element_line(color = "grey90"))
 
 
 task_all <- ggarrange(spe_vise_formatted, spi_visi_formatted,sph_vish_formatted,sp_vis_formatted,sp_phon_formatted,sp_lex_formatted,
